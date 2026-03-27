@@ -10,16 +10,16 @@ export interface ExecutionResult {
 }
 
 export async function executeCode(code: string): Promise<ExecutionResult> {
-    const pistonResult = await executeCppCode(code);
+    const judge0Result = await executeCppCode(code);
     
-    if (!pistonResult.success) {
+    if (!judge0Result.success) {
         return {
             success: false,
-            error: pistonResult.error || 'Ошибка выполнения кода',
+            error: judge0Result.error || 'Ошибка выполнения кода',
         };
     }
 
-    const output = pistonResult.output || '';
+    const output = judge0Result.output || '';
     const commands = parseOutput(output);
 
     if (commands.length === 0) {
