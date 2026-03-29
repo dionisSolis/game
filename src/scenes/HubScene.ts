@@ -12,6 +12,9 @@ export class HubScene extends Phaser.Scene {
     }
 
     create() {
+        window.setGameFullWidth();
+        this.cleanupEditor();
+
         this.drawBackground();
         this.createDoor();
         this.createUI();
@@ -51,5 +54,13 @@ export class HubScene extends Phaser.Scene {
             fontSize: '12px',
             color: '#888866',
         });
+    }
+
+    private cleanupEditor() {
+        const editorContainer = document.getElementById('code-editor-container');
+        if (editorContainer) {
+            editorContainer.remove();
+        }
+        window.showExecuteButton(false);
     }
 }

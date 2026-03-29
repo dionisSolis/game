@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { Book } from '../objects/Book';
 import { GAME_WIDTH, GAME_HEIGHT } from '../config';
 import { SaveManager } from '../utils/SaveManager';
+import { CodeEditor } from '../ui/CodeEditor';
 
 const DIVIDER_X = GAME_WIDTH / 2;
 
@@ -18,12 +19,27 @@ const TEMP_BASE_Y = STACK_BASE_Y;
 export class LevelStackScene extends Phaser.Scene {
     private stack:    Book[] = [];
     private tempZone: Book[] = [];
+    private editor: CodeEditor | null = null;
 
     constructor() {
         super({ key: 'LevelStackScene' });
     }
 
     create() {
+        window.setGameHalfWidth();
+                
+        const { width, height } = this.scale;
+        this.add.rectangle(width / 2, height / 2, width, height, 0x1a1a2e);
+        
+        // Создаем редактор кода
+        this.editor = new CodeEditor('game-container');
+        window.showExecuteButton(true);
+        
+        // Регистрируем обработчик результата выполнения кода (уведомления в main.ts)
+        this.editor.onExecute((result) => {
+            this.handleExecutionResult(result);
+        });
+        
         this.stack    = [];
         this.tempZone = [];
 
@@ -191,6 +207,7 @@ export class LevelStackScene extends Phaser.Scene {
         btn.on('pointerover', () => btn.setStyle({ color: '#ffffff' }));
         btn.on('pointerout',  () => btn.setStyle({ color: '#888899' }));
         btn.on('pointerdown', () => {
+            this.cleanup();
             this.cameras.main.fadeOut(200, 0, 0, 0);
             this.cameras.main.once('camerafadeoutcomplete', () =>
                 this.scene.start('HubScene')
@@ -202,5 +219,46 @@ export class LevelStackScene extends Phaser.Scene {
     // Как только появится условие победы, сделаем вызов this.completeLevel().
     completeLevel() {
         SaveManager.markLevelComplete('stack');
+    }
+    
+    private handleExecutionResult(result: any): void {
+        // Формируем текст уведомления
+        let message = '';
+        let isError = false;
+
+        if (!result.success) {
+            message = `❌ Ошибка: ${result.error || 'Неизвестная ошибка'}`;
+            isError = true;
+        } else {
+            const validCommands = result.commands?.filter((cmd: any) => cmd.type !== 'UNKNOWN') || [];
+            
+            if (validCommands.length > 0) {
+                message = '✅ Полученные команды:\n';
+                validCommands.forEach((cmd: any, i: number) => {
+                    if (cmd.type === 'PUSH' && cmd.bookName) {
+                        message += `\n${i + 1}. PUSH: ${cmd.bookName}`;
+                    } else if (cmd.type === 'POP') {
+                        message += `\n${i + 1}. POP`;
+                    } else {
+                        message += `\n${i + 1}. ${cmd.type}`;
+                    }
+                });
+            } else if (result.rawOutput && result.rawOutput.trim()) {
+                message = `✅ Вывод программы:\n${result.rawOutput}`;
+            } else {
+                message = '✅ Код выполнен успешно!';
+            }
+        }
+
+        // Показываем уведомление через глобальную функцию (над кнопкой)
+        window.showOutput(message, isError);
+    }
+
+    private cleanup(): void {
+        if (this.editor) {
+            this.editor.cleanup();
+            this.editor = null;
+        }
+        window.showExecuteButton(false);
     }
 }
