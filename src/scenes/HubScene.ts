@@ -12,20 +12,15 @@ export class HubScene extends Phaser.Scene {
     }
 
     create() {
-        // Устанавливаем игру на всю ширину
-        window.setGameFullWidth();
-        
-        const { width, height } = this.scale;
-
-        this.drawBackground(width, height);
-        this.createDoor(width, height);
-        this.createUI(height);
+        this.drawBackground();
+        this.createDoor();
+        this.createUI();
     }
 
     private drawBackground() {
         this.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'bg-hub');
 
-        this.add.text(width / 2, 60, 'Библиотека', {
+        this.add.text(GAME_WIDTH / 2, 60, 'Библиотека', {
             fontSize: '32px',
             color: '#e8d5b0',
             fontStyle: 'bold',
@@ -33,7 +28,7 @@ export class HubScene extends Phaser.Scene {
 
         const line = this.add.graphics();
         line.lineStyle(2, 0xe8d5b0, 0.4);
-        line.lineBetween(width / 2 - 120, 90, width / 2 + 120, 90);
+        line.lineBetween(GAME_WIDTH / 2 - 120, 90, GAME_WIDTH / 2 + 120, 90);
     }
 
     private createDoor() {
@@ -51,8 +46,8 @@ export class HubScene extends Phaser.Scene {
         }
     }
 
-    private createUI(height: number) {
-        this.add.text(16, height - 24, 'Нажми на дверь, чтобы войти', {
+    private createUI() {
+        this.add.text(16, GAME_HEIGHT - 24, 'Нажми на дверь, чтобы войти', {
             fontSize: '12px',
             color: '#888866',
         });
