@@ -1,27 +1,25 @@
 import Phaser from 'phaser';
 
-const GAME_WIDTH  = 800;
-const GAME_HEIGHT = 600;
-
-const DOOR_X = GAME_WIDTH / 2;
-const DOOR_Y = GAME_HEIGHT / 2 + 40;
-
 export class HubScene extends Phaser.Scene {
     constructor() {
         super({ key: 'HubScene' });
     }
 
     create() {
-        this.drawBackground();
-        this.createDoor();
-        this.createUI();
+        // Устанавливаем игру на всю ширину
+        window.setGameFullWidth();
+        
+        const { width, height } = this.scale;
+
+        this.drawBackground(width, height);
+        this.createDoor(width, height);
+        this.createUI(height);
     }
 
-    // Пробка из BootScene
-    private drawBackground() {
-        this.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'bg-hub');
+    private drawBackground(width: number, height: number) {
+        this.add.image(width / 2, height / 2, 'bg-hub');
 
-        this.add.text(GAME_WIDTH / 2, 60, 'Библиотека', {
+        this.add.text(width / 2, 60, 'Библиотека', {
             fontSize: '32px',
             color: '#e8d5b0',
             fontStyle: 'bold',
@@ -29,14 +27,17 @@ export class HubScene extends Phaser.Scene {
 
         const line = this.add.graphics();
         line.lineStyle(2, 0xe8d5b0, 0.4);
-        line.lineBetween(GAME_WIDTH / 2 - 120, 90, GAME_WIDTH / 2 + 120, 90);
+        line.lineBetween(width / 2 - 120, 90, width / 2 + 120, 90);
     }
 
-    private createDoor() {
-        const door = this.add.image(DOOR_X, DOOR_Y, 'door')
+    private createDoor(width: number, height: number) {
+        const doorX = width / 2;
+        const doorY = height / 2 + 40;
+
+        const door = this.add.image(doorX, doorY, 'door')
             .setInteractive({ useHandCursor: true });
 
-        const label = this.add.text(DOOR_X, DOOR_Y + 75, 'Уровень 1\nСтек', {
+        const label = this.add.text(doorX, doorY + 75, 'Уровень 1\nСтек', {
             fontSize: '14px',
             color: '#e8d5b0',
             align: 'center',
@@ -85,8 +86,8 @@ export class HubScene extends Phaser.Scene {
         });
     }
 
-    private createUI() {
-        this.add.text(16, GAME_HEIGHT - 24, 'Нажми на дверь, чтобы войти', {
+    private createUI(height: number) {
+        this.add.text(16, height - 24, 'Нажми на дверь, чтобы войти', {
             fontSize: '12px',
             color: '#888866',
         });

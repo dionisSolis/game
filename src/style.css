@@ -294,3 +294,82 @@ code {
     border-right-color: var(--border);
   }
 }
+
+/* ===== CodeMirror Editor Styles ===== */
+
+#game-container {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100vh;
+    z-index: 1;
+    transition: width 0.3s ease;
+}
+
+#code-editor-container {
+    position: fixed;
+    right: 0;
+    top: 0;
+    width: 50%;
+    height: 100vh;
+    z-index: 100;
+    background: #1e1e1e;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+.cm-wrapper {
+    height: 100vh;
+    overflow: auto;
+}
+
+/* Execute button */
+.execute-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    padding: 12px 28px;
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 200;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    transition: transform 0.1s, background 0.2s;
+    font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+}
+
+.execute-btn:hover {
+    background-color: #45a049;
+    transform: scale(1.02);
+}
+
+.execute-btn:active {
+    transform: scale(0.98);
+}
+
+.execute-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Executing indicator */
+.executing-indicator {
+    position: fixed;
+    bottom: 100px;
+    right: 30px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    z-index: 200;
+    display: none;
+    backdrop-filter: blur(5px);
+    font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+}
