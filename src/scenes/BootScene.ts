@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GAME_WIDTH, GAME_HEIGHT } from '../config';
 
 // Комментари (тут песня из уральских пельменей должна быть) 
 // Список ассетов
@@ -12,8 +13,8 @@ const IMAGE_ASSETS = [
 const FALLBACK_PARAMS: Record<string, { w: number; h: number; color: number; label?: string }> = {
     'book':     { w: 60,  h: 80,  color: 0x8b4513, label: 'book'  },
     'door':     { w: 80,  h: 120, color: 0x3a2a1a, label: 'door'  },
-    'bg-hub':   { w: 800, h: 600, color: 0x2a1a3a               },
-    'bg-level': { w: 800, h: 600, color: 0x1a2a1a               },
+    'bg-hub':   { w: GAME_WIDTH, h: GAME_HEIGHT, color: 0x2a1a3a },
+    'bg-level': { w: GAME_WIDTH, h: GAME_HEIGHT, color: 0x1a2a1a },
 };
 
 export class BootScene extends Phaser.Scene {
@@ -70,7 +71,6 @@ export class BootScene extends Phaser.Scene {
         this.progressBar.fillRoundedRect(cx - 156, cy - 11, 312 * value, 22, 4);
     }
 
-// Если файл не найден — generateFallbackTextures() создаст заглушку
     private generateFallbackTextures() {
         for (const [key, params] of Object.entries(FALLBACK_PARAMS)) {
             if (this.failedKeys.has(key) || !this.textures.exists(key)) {

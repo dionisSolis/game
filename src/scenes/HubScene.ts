@@ -1,4 +1,10 @@
 import Phaser from 'phaser';
+import { GAME_WIDTH, GAME_HEIGHT } from '../config';
+import { Door } from '../objects/Door';
+import { SaveManager } from '../utils/SaveManager';
+
+const DOOR_X = GAME_WIDTH / 2;
+const DOOR_Y = GAME_HEIGHT / 2 + 40;
 
 export class HubScene extends Phaser.Scene {
     constructor() {
@@ -16,8 +22,8 @@ export class HubScene extends Phaser.Scene {
         this.createUI(height);
     }
 
-    private drawBackground(width: number, height: number) {
-        this.add.image(width / 2, height / 2, 'bg-hub');
+    private drawBackground() {
+        this.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'bg-hub');
 
         this.add.text(width / 2, 60, 'Библиотека', {
             fontSize: '32px',
@@ -30,60 +36,19 @@ export class HubScene extends Phaser.Scene {
         line.lineBetween(width / 2 - 120, 90, width / 2 + 120, 90);
     }
 
-    private createDoor(width: number, height: number) {
-        const doorX = width / 2;
-        const doorY = height / 2 + 40;
-
-        const door = this.add.image(doorX, doorY, 'door')
-            .setInteractive({ useHandCursor: true });
-
-        const label = this.add.text(doorX, doorY + 75, 'Уровень 1\nСтек', {
-            fontSize: '14px',
-            color: '#e8d5b0',
-            align: 'center',
-        }).setOrigin(0.5, 0);
-
-        door.on('pointerover', () => {
-            this.tweens.add({
-                targets: door,
-                alpha: 0.75,
-                scaleX: 1.05,
-                scaleY: 1.05,
-                duration: 120,
-                ease: 'Quad.easeOut',
-            });
-            label.setStyle({ color: '#ffffff' });
-        });
-
-        door.on('pointerout', () => {
-            this.tweens.add({
-                targets: door,
-                alpha: 1,
-                scaleX: 1,
-                scaleY: 1,
-                duration: 120,
-                ease: 'Quad.easeIn',
-            });
-            label.setStyle({ color: '#e8d5b0' });
-        });
+    private createDoor() {
+        const door = new Door(this, DOOR_X, DOOR_Y, 'Уровень 1\nСтек');
 
         door.on('pointerdown', () => {
-            door.disableInteractive();
-            this.tweens.add({
-                targets: [door, label],
-                alpha: 0,
-                scaleX: 0.9,
-                scaleY: 0.9,
-                duration: 300,
-                ease: 'Quad.easeIn',
-                onComplete: () => {
-                    this.cameras.main.fadeOut(200, 0, 0, 0);
-                    this.cameras.main.once('camerafadeoutcomplete', () => {
-                        this.scene.start('TestScene');
-                    });
-                },
-            });
+            door.open(() => this.scene.start('LevelStackScene'));
         });
+
+        if (SaveManager.isLevelComplete('stack')) {
+            this.add.text(DOOR_X + 50, DOOR_Y - 55, 'Пройдено', {
+                fontSize: '28px',
+                color: '#44ff88',
+            }).setOrigin(0.5);
+        }
     }
 
     private createUI(height: number) {

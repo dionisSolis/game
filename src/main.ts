@@ -1,15 +1,17 @@
 import Phaser from 'phaser';
-import { BootScene } from './scenes/BootScene';
-import { HubScene } from './scenes/HubScene';
-import { TestScene } from './scenes/TestScene';
+import { GAME_WIDTH, GAME_HEIGHT } from './config';
+import { BootScene }       from './scenes/BootScene';
+import { HubScene }        from './scenes/HubScene';
+import { LevelStackScene } from './scenes/LevelStackScene';
+import { TestScene }       from './scenes/TestScene';
 
 const getConfig = () => ({
     type: Phaser.AUTO,
-    width: window.innerWidth,
-    height: window.innerHeight,
+    width: GAME_WIDTH,
+    height: GAME_HEIGHT,
     parent: 'game-container',
     backgroundColor: '#1a1a2e',
-    scene: [BootScene, HubScene, TestScene],
+    scene: [BootScene, HubScene, LevelStackScene, TestScene],
 });
 
 const game = new Phaser.Game(getConfig());
