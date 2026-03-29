@@ -45,7 +45,6 @@ export class LevelStackScene extends Phaser.Scene {
 
         this.drawBackground();
         this.drawTable();
-        // this.drawRightPanel(); // подключить позже, если нужно
         this.createBackButton();
 
         ['1984', 'Идиот', 'Мастер и\nМаргарита', 'Война\nи мир'].forEach(name =>
@@ -107,58 +106,6 @@ export class LevelStackScene extends Phaser.Scene {
         this.add.text(TEMP_X + BOOK_W / 2, STACK_BASE_Y + 22, 'Временно (стэк)', {
             fontSize: '11px', color: '#a08060',
         }).setOrigin(0.5, 0);
-    }
-
-    private drawRightPanel() {
-        const dividerX = GAME_WIDTH / 2;
-        const px = dividerX + 16;
-        const pw = GAME_WIDTH - dividerX - 24;
-        const cx = dividerX + pw / 2 + 8;
-
-        this.add.text(cx, 18, 'Редактор кода', {
-            fontSize: '15px', color: '#aaaacc',
-        }).setOrigin(0.5, 0);
-
-        const edBg = this.add.graphics();
-        edBg.fillStyle(0x0d1117, 0.92);
-        edBg.fillRoundedRect(px, 44, pw, 360, 6);
-        edBg.lineStyle(1, 0x30304a);
-        edBg.strokeRoundedRect(px, 44, pw, 360, 6);
-
-        this.add.text(px + 10, 56,
-            '#include <iostream>\n#include <stack>\nusing namespace std;\n\nint main() {\n\n\n    return 0;\n}',
-            { fontSize: '11px', color: '#6a9955', fontFamily: 'monospace' }
-        );
-        const btnY = 420;
-        const btnBg = this.add.graphics();
-        btnBg.fillStyle(0x2d6a1f, 1);
-        btnBg.fillRoundedRect(cx - 68, btnY - 15, 136, 30, 6);
-
-        this.add.text(cx, btnY, '▶  Выполнить', {
-            fontSize: '13px', color: '#ffffff',
-        }).setOrigin(0.5);
-
-        const btnZone = this.add.zone(cx, btnY, 136, 30).setInteractive({ useHandCursor: true });
-        btnZone.on('pointerover', () => {
-            btnBg.clear();
-            btnBg.fillStyle(0x3d8a2f, 1);
-            btnBg.fillRoundedRect(cx - 68, btnY - 15, 136, 30, 6);
-        });
-        btnZone.on('pointerout', () => {
-            btnBg.clear();
-            btnBg.fillStyle(0x2d6a1f, 1);
-            btnBg.fillRoundedRect(cx - 68, btnY - 15, 136, 30, 6);
-        });
-
-        const outBg = this.add.graphics();
-        outBg.fillStyle(0x0d1117, 0.7);
-        outBg.fillRoundedRect(px, 462, pw, 110, 6);
-        outBg.lineStyle(1, 0x30304a);
-        outBg.strokeRoundedRect(px, 462, pw, 110, 6);
-
-        this.add.text(px + 8, 470, '> вывод программы', {
-            fontSize: '11px', color: '#444466', fontFamily: 'monospace',
-        });
     }
 
     private spawnSoloBooks() {
