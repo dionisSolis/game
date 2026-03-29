@@ -207,6 +207,7 @@ export class LevelStackScene extends Phaser.Scene {
         btn.on('pointerover', () => btn.setStyle({ color: '#ffffff' }));
         btn.on('pointerout',  () => btn.setStyle({ color: '#888899' }));
         btn.on('pointerdown', () => {
+            this.cleanup();
             this.cameras.main.fadeOut(200, 0, 0, 0);
             this.cameras.main.once('camerafadeoutcomplete', () =>
                 this.scene.start('HubScene')
@@ -251,5 +252,13 @@ export class LevelStackScene extends Phaser.Scene {
 
         // Показываем уведомление через глобальную функцию (над кнопкой)
         window.showOutput(message, isError);
+    }
+
+    private cleanup(): void {
+        if (this.editor) {
+            this.editor.cleanup();
+            this.editor = null;
+        }
+        window.showExecuteButton(false);
     }
 }
