@@ -1,64 +1,70 @@
 import Phaser from 'phaser';
 
-const BOOK_W = 60;
-const BOOK_H = 80;
-
+export const BOOK_H = 80;
 const BOOK_COLORS = [0x8b4513, 0x2e4a7a, 0x4a7a2e, 0x7a3a6e, 0x3a6e7a, 0x6e6e3a];
 
 export class Book extends Phaser.GameObjects.Container {
     readonly bookName: string;
+    readonly bookW: number;
+    readonly significance: number;
 
     static colorIndex = 0;
 
-    constructor(scene: Phaser.Scene, x: number, y: number, bookName: string, colorIndex?: number) {
+    constructor(
+        scene: Phaser.Scene,
+        x: number,
+        y: number,
+        bookName: string,
+        significance: number = 3,
+        colorIndex?: number,
+    ) {
         super(scene, x, y);
 
-        this.bookName = bookName;
+        this.bookName    = bookName;
+        this.significance = significance;
+        this.bookW       = 84 - (significance - 1) * 14;
 
         const color = BOOK_COLORS[(colorIndex ?? Book.colorIndex++) % BOOK_COLORS.length];
 
         const spine = scene.add.graphics();
         spine.fillStyle(color, 1);
-        spine.fillRect(0, 0, BOOK_W, BOOK_H);
-
+        spine.fillRect(0, 0, this.bookW, BOOK_H);
         spine.fillStyle(0xffffff, 0.15);
         spine.fillRect(0, 0, 8, BOOK_H);
-
         spine.fillStyle(0x000000, 0.25);
-        spine.fillRect(0, BOOK_H - 6, BOOK_W, 6);
+        spine.fillRect(0, BOOK_H - 6, this.bookW, 6);
 
-        const label = scene.add.text(BOOK_W / 2, BOOK_H / 2, bookName, {
-            fontSize: '10px',
+        const label = scene.add.text(this.bookW / 2, BOOK_H / 2, bookName, {
+            fontSize: '9px',
             color: '#ffffff',
-            wordWrap: { width: BOOK_W - 10 },
+            wordWrap: { width: this.bookW - 8 },
             align: 'center',
         }).setOrigin(0.5);
 
         this.add([spine, label]);
-        this.setSize(BOOK_W, BOOK_H);
-
+        this.setSize(this.bookW, BOOK_H);
         scene.add.existing(this);
     }
 
-    moveTo(x: number, y: number, duration: number = 400): Promise<void> {
+    moveTo(x: number, y: number, duration = 400): Promise<void> {
         return new Promise(resolve => {
             this.scene.tweens.add({
-                targets:  this,
+                targets: this,
                 x, y,
                 duration,
-                ease:     'Quad.easeInOut',
+                ease: 'Quad.easeInOut',
                 onComplete: () => resolve(),
             });
         });
     }
 
-    stackOnTop(ofBook?: Book, offsetY: number = 0): Promise<void> {
-        const targetX = ofBook ? ofBook.x : this.x;
-        const targetY = ofBook ? ofBook.y - offsetY : this.y - offsetY;
-        return this.moveTo(targetX, targetY, 380);
+    stackOnTop(ofBook?: Book, offsetY = 0): Promise<void> {
+        const tx = ofBook ? ofBook.x : this.x;
+        const ty = ofBook ? ofBook.y - offsetY : this.y - offsetY;
+        return this.moveTo(tx, ty, 380);
     }
 
-    pop(duration: number = 300): Promise<void> {
+    pop(duration = 300): Promise<void> {
         return new Promise(resolve => {
             this.scene.tweens.add({
                 targets:  this,
@@ -68,10 +74,7 @@ export class Book extends Phaser.GameObjects.Container {
                 y:        this.y - 30,
                 duration,
                 ease:     'Quad.easeIn',
-                onComplete: () => {
-                    this.destroy();
-                    resolve();
-                },
+                onComplete: () => { this.destroy(); resolve(); },
             });
         });
     }

@@ -1,13 +1,15 @@
 const SAVE_KEY = 'magic-library-save';
 
 export interface SaveData {
-    completedLevels: string[];   
-    unlockedBooks:   string[];  
+    completedLevels: string[];
+    unlockedBooks:   string[];
+    levelCodes:      Record<string, string>;
 }
 
 const DEFAULT_SAVE: SaveData = {
     completedLevels: [],
     unlockedBooks:   [],
+    levelCodes:      {},
 };
 
 export const SaveManager = {
@@ -44,6 +46,16 @@ export const SaveManager = {
             data.unlockedBooks.push(bookName);
             this.save(data);
         }
+    },
+
+    saveCode(levelId: string, code: string): void {
+        const data = this.load();
+        data.levelCodes[levelId] = code;
+        this.save(data);
+    },
+
+    loadCode(levelId: string): string | null {
+        return this.load().levelCodes[levelId] ?? null;
     },
 
     reset(): void {
