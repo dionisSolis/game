@@ -66,9 +66,9 @@ window.setGameFullWidth = () => {
 window.setGameHalfWidth = () => {
     const gameContainer = document.getElementById('game-container');
     if (gameContainer) {
-        gameContainer.style.width = '50%';
+        gameContainer.style.width = '65%';
     }
-    window.game.scale.resize(window.innerWidth / 2, window.innerHeight);
+    window.game.scale.resize(window.innerWidth * 0.65, window.innerHeight);
 };
 
 window.addEventListener('resize', () => {
