@@ -1,72 +1,105 @@
-import GigaChat from 'gigachat';
+export interface GigaChatConfig {
+    apiUrl: string;
+    timeout?: number;
+}
 
-// Гарантируем наличие process и Buffer в браузере
-if (typeof globalThis.process === 'undefined') {
-    // @ts-ignore
-    globalThis.process = {
-        env: {},
-        version: '',
-        release: { lts: '', name: '' },
-        cwd: () => '/',
-        platform: 'browser',
-        nextTick: (fn: any, ...args: any[]) => setTimeout(() => fn(...args), 0),
+export interface ChatMessage {
+    role: 'system' | 'user' | 'assistant';
+    content: string;
+}
+
+export interface ChatRequest {
+    messages: ChatMessage[];
+    temperature?: number;
+    max_tokens?: number;
+}
+
+export interface ChatResponse {
+    choices: Array<{
+        message: {
+            content: string;
+            role: string;
+        };
+        index: number;
+    }>;
+    usage?: {
+        prompt_tokens: number;
+        completion_tokens: number;
+        total_tokens: number;
     };
 }
 
-if (typeof globalThis.Buffer === 'undefined') {
-    // @ts-ignore
-    globalThis.Buffer = {
-        from: (str: string) => ({ toString: () => str }),
-        isBuffer: () => false,
+export interface GigaChatClient {
+    chat(request: ChatRequest): Promise<ChatResponse>;
+}
+
+export function createGigaChatClient(config: GigaChatConfig): GigaChatClient {
+    const { apiUrl, timeout = 60000 } = config;
+
+    return {
+        async chat(request: ChatRequest): Promise<ChatResponse> {
+            const userMessage = request.messages.find(m => m.role === 'user')?.content || '';
+            
+            const systemMessage = request.messages.find(m => m.role === 'system')?.content;
+            const finalMessage = systemMessage 
+                ? `${systemMessage}\n\nИгрок: ${userMessage}`
+                : userMessage;
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: finalMessage }),
+                    signal: controller.signal,
+                });
+
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Сервер GigaChat вернул ошибку ${response.status}: ${errorText}`);
+                }
+
+                const data = await response.json();
+                
+                return data as ChatResponse;
+            } catch (error: any) {
+                if (error.name === 'AbortError') {
+                    throw new Error('Превышено время ожидания ответа от ИИ');
+                }
+                console.error('GigaChat request failed:', error);
+                throw error;
+            }
+        },
     };
 }
 
-// Глобальный экземпляр клиента (один на всё приложение)
-let gigaClient: InstanceType<typeof GigaChat> | null = null;
+let clientInstance: GigaChatClient | null = null;
 
-/**
- * Получение токена из .env файла
- * В .env должно быть: VITE_GIGACHAT_CREDENTIALS=твой_ключ
- */
-function getApiKey(): string {
-    const key = "MDE5OTYxMTMtNTk3NS03MzA2LThlZWYtM2QxY2QxMjFmMmI4OjI5NTFmOGFiLTc4MWUtNDYyYy05MDY4LWNhYTA0MzgyMTM5OQ";
-    if (!key) {
-        console.warn('⚠️ VITE_GIGACHAT_CREDENTIALS не задан в .env файле');
-        return '';
+export function getGigaChatClient(apiUrl: string = 'https://gigachat-typescript-server.onrender.com/chat'): GigaChatClient | null {
+    if (!clientInstance) {
+        clientInstance = createGigaChatClient({ apiUrl });
     }
-    return key;
+    return clientInstance;
+}
+
+export async function checkGigaChatAvailable(apiUrl: string = 'https://gigachat-typescript-server.onrender.com/chat'): Promise<boolean> {
+    try {
+        const response = await fetch(`${apiUrl}/`, { method: 'GET', signal: AbortSignal.timeout(2000) });
+        return response.ok;
+    } catch {
+        return false;
+    }
 }
 
 /**
- * Инициализация и получение клиента GigaChat
- */
-export function getGigaChatClient(): InstanceType<typeof GigaChat> | null {
-    const apiKey = getApiKey();
-    if (!apiKey) {
-        console.error('❌ Невозможно создать клиент GigaChat: отсутствует API ключ');
-        return null;
-    }
-
-    if (!gigaClient) {
-        try {
-            gigaClient = new GigaChat({
-                credentials: apiKey,
-                dangerouslyAllowBrowser: true,
-                // Опциональные настройки
-                timeout: 10000, // таймаут 10 секунд
-            });
-            console.log('✅ GigaChat клиент инициализирован');
-        } catch (error) {
-            console.error('❌ Ошибка инициализации GigaChat клиента:', error);
-            return null;
-        }
-    }
-    return gigaClient;
-}
-
-/**
- * Проверка доступности клиента
+ * Синхронная версия проверки (для isAvailable - быстро возвращает true, если клиент создан)
  */
 export function isGigaChatAvailable(): boolean {
-    return getGigaChatClient() !== null;
+    return clientInstance !== null;
 }

@@ -65,7 +65,7 @@ export class AIAgent {
             }
             return 'Мяу... я задумалась. Попробуй ещё раз.';
         } catch (error: any) {
-            console.error('❌ GigaChat API error:', error);
+            console.error('GigaChat API error:', error);
             const errorMsg = error?.message || String(error);
             return `Мяу... что-то пошло не так: ${errorMsg.substring(0, 100)}. Но ты всё равно молодец, продолжай!`;
         }
@@ -116,7 +116,7 @@ export class AIAgent {
     }
 
     /**
-     * Универсальный метод для произвольного вопроса (на будущее)
+     * Универсальный метод для произвольного вопроса
      */
     async ask(question: string): Promise<AIResponse> {
         const text = await this.sendRequest(question);
@@ -124,7 +124,4 @@ export class AIAgent {
     }
 }
 
-/**
- * Экспортируем синглтон для удобного импорта
- */
 export const aiAgent = AIAgent.getInstance();
