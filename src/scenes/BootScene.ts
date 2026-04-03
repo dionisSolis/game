@@ -7,7 +7,7 @@ const IMAGE_ASSETS = [
     { key: 'book',     path: 'assets/images/book.png' },
     { key: 'door',     path: 'assets/images/door.png' },
     { key: 'bg-hub',   path: 'assets/images/bg-hub.png' },
-    { key: 'bg-level', path: 'assets/images/bg-level.png' },
+    { key: 'bg-level', path: 'assets/images/background.jpg' },
 ] as const;
 
 const FALLBACK_PARAMS: Record<string, { w: number; h: number; color: number; label?: string }> = {
