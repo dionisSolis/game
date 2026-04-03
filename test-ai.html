@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Тест ИИ-агента | Кошка Рекурсия</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a2a 0%, #1a1a3e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 215, 150, 0.3);
+            backdrop-filter: blur(4px);
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Хедер с кошкой */
+        .header {
+            background: #2a1a0a;
+            padding: 20px;
+            border-bottom: 2px solid #ffb347;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .cat-icon {
+            font-size: 48px;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));
+            animation: tailWiggle 3s ease-in-out infinite;
+            transform-origin: 70% 80%;
+        }
+
+        @keyframes tailWiggle {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(5deg); }
+        }
+
+        .header h1 {
+            color: #ffd966;
+            font-size: 1.6rem;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 0 #5a3a1a;
+        }
+
+        .header p {
+            color: #ccaa77;
+            font-size: 0.85rem;
+            margin-top: 6px;
+        }
+
+        .status {
+            margin-left: auto;
+            font-size: 0.75rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: #1a1a2a;
+            color: #88ff88;
+            border: 1px solid #88ff88;
+        }
+
+        /* Основной чат-область */
+        .chat-area {
+            height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background: rgba(10, 10, 26, 0.7);
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.assistant {
+            justify-content: flex-start;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            background: #2a2a4a;
+            flex-shrink: 0;
+        }
+
+        .bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 20px;
+            line-height: 1.5;
+            font-size: 0.95rem;
+            word-wrap: break-word;
+        }
+
+        .user .bubble {
+            background: linear-gradient(135deg, #3a5a8a, #2a4a7a);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .assistant .bubble {
+            background: #2a2a3a;
+            color: #eeddcc;
+            border-bottom-left-radius: 4px;
+            border-left: 3px solid #ffb347;
+        }
+
+        /* Прелоадер (кошка думает) */
+        .thinking {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #2a2a3a;
+            border-radius: 20px;
+            width: fit-content;
+            color: #ffb347;
+            font-style: italic;
+        }
+
+        .thinking span {
+            animation: blink 1.2s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        /* Панель ввода */
+        .input-panel {
+            padding: 16px 20px;
+            background: #1a1a2e;
+            border-top: 1px solid #3a3a5a;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .quick-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .quick-btn {
+            background: #2a2a4a;
+            border: none;
+            color: #ccaa88;
+            font-family: monospace;
+            font-size: 0.75rem;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-btn:hover {
+            background: #ffb347;
+            color: #1a1a2a;
+            transform: scale(1.02);
+        }
+
+        .input-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        textarea {
+            flex: 1;
+            background: #0a0a1a;
+            border: 1px solid #4a4a6a;
+            border-radius: 16px;
+            padding: 12px;
+            color: #aaffdd;
+            font-family: monospace;
+            font-size: 0.9rem;
+            resize: vertical;
+            outline: none;
+        }
+
+        textarea:focus {
+            border-color: #ffb347;
+        }
+
+        button {
+            background: #ffb347;
+            border: none;
+            padding: 0 24px;
+            border-radius: 24px;
+            font-weight: bold;
+            font-family: monospace;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #1a1a2a;
+        }
+
+        button:hover {
+            background: #ffaa33;
+            transform: scale(1.02);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .footer-note {
+            font-size: 0.7rem;
+            text-align: center;
+            padding: 10px;
+            color: #666;
+            border-top: 1px solid #2a2a4a;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="cat-icon">🐱‍👤</div>
+        <div>
+            <h1>📖 Кошка Рекурсия</h1>
+            <p>«Мяу... я здесь, чтобы помочь с магией C++»</p>
+        </div>
+        <div class="status" id="statusLabel">⚡ инициализация...</div>
+    </div>
+
+    <div class="chat-area" id="chatArea">
+        <div class="message assistant">
+            <div class="avatar">🐾</div>
+            <div class="bubble">
+                Мур-мяу! Я — Рекурсия, твой пушистый наставник.<br>
+                Задавай вопросы про стек, C++ или проси подсказку.<br>
+                <span style="color:#ffb347;">➡️ Напиши что-нибудь или нажми на кнопку ниже.</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="input-panel">
+        <div class="quick-buttons">
+            <button class="quick-btn" data-prompt="Подскажи, что такое стек LIFO?">📚 Что такое стек?</button>
+            <button class="quick-btn" data-prompt="Как использовать push и pop?">📦 Push/Pop</button>
+            <button class="quick-btn" data-prompt="Дай пример кода для стека на C++">💻 Пример кода</button>
+            <button class="quick-btn" data-prompt="Проверь мои знания: как положить книгу в стек?">📖 Проверить</button>
+        </div>
+        <div class="input-row">
+            <textarea id="userInput" rows="2" placeholder="Спроси у кошки Рекурсии..."></textarea>
+            <button id="sendBtn">📨 Отправить</button>
+        </div>
+    </div>
+    <div class="footer-note">
+        🧪 Тестовый режим | ИИ-агент через GigaChat | Кошка Рекурсия говорит на C++
+    </div>
+</div>
+
+<script type="module">
+    // Импортируем нашего ИИ-агента
+    import { aiAgent } from '/src/ai/AIAgent.ts';
+
+    // DOM элементы
+    const chatArea = document.getElementById('chatArea');
+    const userInput = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const statusLabel = document.getElementById('statusLabel');
+
+    // Состояние
+    let isWaiting = false;
+
+    // Обновление статуса
+    function updateStatus() {
+        if (!aiAgent.isAvailable()) {
+            statusLabel.innerHTML = '🔴 GigaChat недоступен';
+            statusLabel.style.color = '#ff8888';
+            statusLabel.style.borderColor = '#ff8888';
+        } else {
+            statusLabel.innerHTML = '🟢 GigaChat готов';
+            statusLabel.style.color = '#88ff88';
+            statusLabel.style.borderColor = '#88ff88';
+        }
+    }
+
+    // Добавление сообщения в чат
+    function addMessage(role, text) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${role}`;
+        
+        if (role === 'assistant') {
+            messageDiv.innerHTML = `
+                <div class="avatar">🐱</div>
+                <div class="bubble">${escapeHtml(text)}</div>
+            `;
+        } else {
+            messageDiv.innerHTML = `
+                <div class="bubble">${escapeHtml(text)}</div>
+                <div class="avatar">🧙</div>
+            `;
+        }
+        
+        chatArea.appendChild(messageDiv);
+        messageDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // Показать индикатор "кошка думает"
+    function showThinking() {
+        const thinkingDiv = document.createElement('div');
+        thinkingDiv.className = 'message assistant';
+        thinkingDiv.id = 'thinking-message';
+        thinkingDiv.innerHTML = `
+            <div class="avatar">🐱</div>
+            <div class="thinking">
+                <span>🐾</span> мур-мяу, думаю... <span>🐾</span>
+            </div>
+        `;
+        chatArea.appendChild(thinkingDiv);
+        thinkingDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function hideThinking() {
+        const thinking = document.getElementById('thinking-message');
+        if (thinking) thinking.remove();
+    }
+
+    // Эскейп HTML символов
+    function escapeHtml(str) {
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/\n/g, '<br>');
+    }
+
+    // Отправка сообщения к AI
+    async function sendToAI(userMessage) {
+        if (isWaiting) return;
+        if (!userMessage.trim()) return;
+
+        // Добавляем сообщение пользователя
+        addMessage('user', userMessage);
+        userInput.value = '';
+
+        isWaiting = true;
+        sendBtn.disabled = true;
+        showThinking();
+
+        try {
+            // Пробуем разные методы AIAgent в зависимости от контекста
+            let response;
+            
+            // Простой эвристический маршрутизатор
+            const lowerMsg = userMessage.toLowerCase();
+            if (lowerMsg.includes('подскажи') || lowerMsg.includes('помощь') || lowerMsg.includes('что делать')) {
+                // Запрос подсказки по заданию (имитируем выполнение кода)
+                response = await aiAgent.getManualHint();
+            } else if (lowerMsg.includes('привет') || lowerMsg.includes('здравствуй') || lowerMsg.includes('мяу')) {
+                // Приветствие
+                response = await aiAgent.greetPlayer('тестировщик');
+            } else {
+                // Универсальный вопрос
+                response = await aiAgent.ask(userMessage);
+            }
+            
+            if (response && response.text) {
+                addMessage('assistant', response.text);
+            } else {
+                addMessage('assistant', 'Мяу... что-то пошло не так. Попробуй ещё раз.');
+            }
+        } catch (error) {
+            console.error('AI error:', error);
+            addMessage('assistant', `❌ Ошибка: ${error.message || 'Неизвестная ошибка'}`);
+        } finally {
+            hideThinking();
+            isWaiting = false;
+            sendBtn.disabled = false;
+            updateStatus();
+        }
+    }
+
+    // Обработчики
+    sendBtn.addEventListener('click', () => {
+        const text = userInput.value.trim();
+        if (text) sendToAI(text);
+    });
+
+    userInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            const text = userInput.value.trim();
+            if (text) sendToAI(text);
+        }
+    });
+
+    // Быстрые кнопки
+    document.querySelectorAll('.quick-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const prompt = btn.getAttribute('data-prompt');
+            if (prompt) sendToAI(prompt);
+        });
+    });
+
+    // Инициализация статуса
+    updateStatus();
+    
+    // Небольшая задержка для проверки статуса
+    setTimeout(updateStatus, 1000);
+</script>
+</body>
+</html>
