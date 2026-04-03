@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-export const BOOK_H = 80;
+export const BOOK_H = 110;
 const BOOK_COLORS = [0x8b4513, 0x2e4a7a, 0x4a7a2e, 0x7a3a6e, 0x3a6e7a, 0x6e6e3a];
 
 export class Book extends Phaser.GameObjects.Container {
@@ -22,7 +22,7 @@ export class Book extends Phaser.GameObjects.Container {
 
         this.bookName    = bookName;
         this.significance = significance;
-        this.bookW       = 84 - (significance - 1) * 14;
+        this.bookW       = 108 - (significance - 1) * 16;
 
         const color = BOOK_COLORS[(colorIndex ?? Book.colorIndex++) % BOOK_COLORS.length];
 
@@ -35,7 +35,7 @@ export class Book extends Phaser.GameObjects.Container {
         spine.fillRect(0, BOOK_H - 6, this.bookW, 6);
 
         const label = scene.add.text(this.bookW / 2, BOOK_H / 2, bookName, {
-            fontSize: '9px',
+            fontSize: '11px',
             color: '#ffffff',
             wordWrap: { width: this.bookW - 8 },
             align: 'center',
