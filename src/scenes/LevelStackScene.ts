@@ -425,7 +425,6 @@ export class LevelStackScene extends Phaser.Scene {
                     duration: 20, delay: srcPosIndex * 80, ease: 'Quad.easeOut',
                 });
                 this.sourceBooks.set(data.name, book);
-                this.makeBookInteractive(book, y);
             }
         });
         this.updateStackDepths();
@@ -440,20 +439,6 @@ export class LevelStackScene extends Phaser.Scene {
         }
         for (const b of this.sourceBooks.values()) {
             try { b.setDepth(baseDepth - 50); } catch (e) { /* ignore */ }
-        }
-    }
-
-    private makeBookInteractive(book: Book, baseY: number) {
-        try {
-            book.setInteractive();
-            book.on('pointerover', () =>
-                this.tweens.add({ targets: book, y: baseY - 12, duration: 150, ease: 'Quad.easeOut' })
-            );
-            book.on('pointerout', () =>
-                this.tweens.add({ targets: book, y: baseY, duration: 150, ease: 'Quad.easeIn' })
-            );
-        } catch (e) {
-            // Some objects may not support interactivity at creation time — ignore safely
         }
     }
 
@@ -524,7 +509,6 @@ export class LevelStackScene extends Phaser.Scene {
         await book.moveToAsync(pos.x, pos.y, 380);
         book.setAlpha(1);
         this.sourceBooks.set(book.bookName, book);
-        this.makeBookInteractive(book, pos.y);
         try { book.setDepth(150); } catch (e) { /* ignore */ }
     }
 
