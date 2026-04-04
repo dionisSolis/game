@@ -4,14 +4,21 @@ import { GAME_WIDTH, GAME_HEIGHT } from '../config';
 // Комментари (тут песня из уральских пельменей должна быть) 
 // Список ассетов
 const IMAGE_ASSETS = [
-    { key: 'book',     path: 'assets/images/book.png' },
+    { key: 'book1',    path: 'assets/images/book1.png' },
+    { key: 'book2',    path: 'assets/images/book2.png' },
+    { key: 'book3',    path: 'assets/images/book3.png' },
+    { key: 'book4',    path: 'assets/images/book4.png' },
     { key: 'door',     path: 'assets/images/door.png' },
-    { key: 'bg-hub',   path: 'assets/images/bg-hub.png' },
-    { key: 'bg-level', path: 'assets/images/background.jpg' },
+    { key: 'bg-hub',   path: 'assets/images/fon_hab.png' },
+    { key: 'bg-level', path: 'assets/images/fon_level.png' },
 ] as const;
 
 const FALLBACK_PARAMS: Record<string, { w: number; h: number; color: number; label?: string }> = {
     'book':     { w: 60,  h: 80,  color: 0x8b4513, label: 'book'  },
+    // fallbacks for numbered book textures (book1, book2, ...)
+    'book1':    { w: 60,  h: 80,  color: 0x8b4513, label: 'book1' },
+    'book2':    { w: 60,  h: 80,  color: 0x2e4a7a, label: 'book2' },
+    'book3':    { w: 60,  h: 80,  color: 0x4a7a2e, label: 'book3' },
     'door':     { w: 80,  h: 120, color: 0x3a2a1a, label: 'door'  },
     'bg-hub':   { w: GAME_WIDTH, h: GAME_HEIGHT, color: 0x2a1a3a },
     'bg-level': { w: GAME_WIDTH, h: GAME_HEIGHT, color: 0x1a2a1a },
@@ -74,7 +81,7 @@ export class BootScene extends Phaser.Scene {
     private generateFallbackTextures() {
         for (const [key, params] of Object.entries(FALLBACK_PARAMS)) {
             if (this.failedKeys.has(key) || !this.textures.exists(key)) {
-                const g = this.make.graphics({ add: false });
+                const g = this.make.graphics();
 
                 g.fillStyle(params.color, 1);
                 g.fillRect(0, 0, params.w, params.h);

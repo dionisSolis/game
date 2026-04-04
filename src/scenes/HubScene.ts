@@ -3,8 +3,8 @@ import { GAME_WIDTH, GAME_HEIGHT } from '../config';
 import { Door } from '../objects/Door';
 import { SaveManager } from '../utils/SaveManager';
 
-const DOOR_X = GAME_WIDTH / 2;
-const DOOR_Y = GAME_HEIGHT / 2 + 40;
+const DOOR_X = GAME_WIDTH * 0.09;
+const DOOR_Y = GAME_HEIGHT * 0.4;
 
 export class HubScene extends Phaser.Scene {
     constructor() {
@@ -35,14 +35,16 @@ export class HubScene extends Phaser.Scene {
     }
 
     private createDoor() {
-        const door = new Door(this, DOOR_X, DOOR_Y, 'Уровень 1\nСтек');
+    const door = new Door(this, DOOR_X + 50, DOOR_Y - 10, 'Уровень 1\nСтек');
+    // Сделаем саму картинку двери невидимой, но подписи и функциональность оставим
+    door.hideSprite();
 
         door.on('pointerdown', () => {
             door.open(() => this.scene.start('LevelStackScene'));
         });
 
         if (SaveManager.isLevelComplete('stack')) {
-            this.add.text(DOOR_X + 50, DOOR_Y - 55, 'Пройдено', {
+            this.add.text(DOOR_X + 50, DOOR_Y - 75, 'Пройдено', {
                 fontSize: '28px',
                 color: '#44ff88',
             }).setOrigin(0.5);
@@ -50,7 +52,7 @@ export class HubScene extends Phaser.Scene {
     }
 
     private createUI() {
-        this.add.text(16, GAME_HEIGHT - 24, 'Нажми на дверь, чтобы войти', {
+        this.add.text(16, GAME_HEIGHT - 24, 'Нажми на уровень, чтобы войти', {
             fontSize: '12px',
             color: '#888866',
         });
