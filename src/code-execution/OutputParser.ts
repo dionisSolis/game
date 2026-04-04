@@ -16,7 +16,7 @@ export function parseOutput(output: string): Command[] {
                 commands.push({ type: 'PUSH', bookName });
             }
         } 
-        else if (trimmed === 'POP') {
+        else if (trimmed === 'POP' || trimmed.startsWith('POP:')) {
             commands.push({ type: 'POP' });
         }
         else if (trimmed.length > 0) {
