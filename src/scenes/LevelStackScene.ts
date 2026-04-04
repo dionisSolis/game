@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { Book, BOOK_H } from '../objects/Book';
 import { SaveManager } from '../utils/SaveManager';
 import { CodeEditor } from '../ui/CodeEditor';
-import { aiAgent } from '../ai/AIAgent';
+import { aiAgent } from '../ai/AiAgent';
 
 
 const SOURCE_BOOKS = [
@@ -15,7 +15,7 @@ const SOURCE_BOOKS = [
 const TARGET_ORDER = ['Дикий Веперь', 'Идиот', '1984', 'Стихи'];
 
 const STACK_GAP    = 3;
-const BUBBLE_TOP_Y = 240;
+const BUBBLE_TOP_Y = 130;
 const BUBBLE_H     = 220;
 
 
@@ -83,8 +83,8 @@ export class LevelStackScene extends Phaser.Scene {
         this.bubbleNameBg.lineStyle(1, 0x6655aa, 0.8);
         this.bubbleNameBg.strokeRoundedRect(w * 0.76 - 72, BUBBLE_TOP_Y - 28, 144, 24, 5);
         this.bubbleNameText = this.add.text(w * 0.76, BUBBLE_TOP_Y - 16, '🐱 Рекурсия', {
-            fontSize: '11px',
-            fontFamily: '"Press Start 2P", monospace',
+            fontSize: '20px',
+            fontFamily: 'pixel',
             color: '#ccaaff',
         }).setOrigin(0.5, 0.5).setDepth(10).setAlpha(0);
 
@@ -228,7 +228,7 @@ export class LevelStackScene extends Phaser.Scene {
         this.positionDiv();
         this.bubbleTextDiv.innerHTML = `
             <div style="color:#aaaacc;font-size:11px;margin-bottom:14px;letter-spacing:1px;">
-                Рекурсия составляет ответ...
+                Кошечка Рекурсия просыпается (подожди ~минутку)...
             </div>
             <div>
                 <span class="thinking-dot"></span>
@@ -281,7 +281,7 @@ export class LevelStackScene extends Phaser.Scene {
 
         const input = document.createElement('input');
         input.type = 'text';
-        input.placeholder = 'Спроси у кошечки Рекурсию...';
+        input.placeholder = 'Спроси у кошечки Рекурсии...';
         input.style.cssText = [
             'flex:2',
             'background:#0d0d20',
@@ -352,46 +352,19 @@ export class LevelStackScene extends Phaser.Scene {
 private drawLabels(w: number, h: number) {
     const pixelFont = '"Press Start 2P", monospace';
     const monoFont = '"Courier New", monospace';
-    
-    const sourceBg = this.add.graphics();
-    sourceBg.fillStyle(0x2a1a0a, 0.9);
-    sourceBg.fillRoundedRect(w * 0.25 - 120, 12, 240, 48, 4);
-    sourceBg.lineStyle(2, 0xc4a27a, 0.8);
-    sourceBg.strokeRoundedRect(w * 0.25 - 120, 12, 240, 48, 4);
-    
-    this.add.text(w * 0.25, 36, 'ИСТОЧНИК', {
-        fontSize: '22px',
-        fontFamily: pixelFont,
-        color: '#ffcc88',
-        fontStyle: 'bold'
-    }).setOrigin(0.5);
-
-    
-
-    const hintBg = this.add.graphics();
-    hintBg.fillStyle(0x1a1a0a, 0.7);
-    hintBg.fillRoundedRect(w * 0.25 - 160, 70, 320, 32, 3);
-    hintBg.lineStyle(1, 0x8a8a66, 0.5);
-    hintBg.strokeRoundedRect(w * 0.25 - 160, 70, 320, 32, 3);
-    
-    this.add.text(w * 0.25, 86, 'Ширина книги = важность', {
-        fontSize: '14px',
-        fontFamily: monoFont,
-        color: '#a8a888',
-    }).setOrigin(0.5);
 
     const taskOffset = 25;
     const taskY = h * 0.10 + taskOffset;
     
     const taskBg = this.add.graphics();
     taskBg.fillStyle(0x0d0a1a, 0.95);
-    taskBg.fillRoundedRect(w * 0.25 - 200, taskY - 10, 400, 130, 8);
+    taskBg.fillRoundedRect(w * 0.25 - 200, taskY - 70, 400, 130, 8);
     taskBg.lineStyle(3, 0xffaa66, 0.6);
-    taskBg.strokeRoundedRect(w * 0.25 - 200, taskY - 10, 400, 130, 8);
+    taskBg.strokeRoundedRect(w * 0.25 - 200, taskY - 70, 400, 130, 8);
     
     const cornerSize = 12;
     const rectX = w * 0.25 - 200;
-    const rectY = taskY - 10;
+    const rectY = taskY - 70;
     const rectW = 400;
     const rectH = 130;
     
@@ -406,24 +379,24 @@ private drawLabels(w: number, h: number) {
     corners.lineBetween(rectX + rectW - cornerSize, rectY + rectH, rectX + rectW, rectY + rectH);
     corners.lineBetween(rectX + rectW, rectY + rectH - cornerSize, rectX + rectW, rectY + rectH);
     
-    this.add.text(w * 0.25, taskY + 15, '▸ ЗАДАНИЕ ◂', {
-        fontSize: '18px',
-        fontFamily: pixelFont,
+    this.add.text(w * 0.25, taskY - 60, '▸ ЗАДАНИЕ ◂', {
+        fontSize: '22px',
+        fontFamily: 'pixel',
         color: '#ffaa66',
         fontStyle: 'bold',
         align: 'center'
     }).setOrigin(0.5, 0);
     
-    this.add.text(w * 0.25, taskY + 50, 'Собери стек так, чтобы', {
+    this.add.text(w * 0.25, taskY - 35, 'Собери стек так, чтобы', {
         fontSize: '18px',
-        fontFamily: monoFont,
+        fontFamily: 'pixel',
         color: '#dddddd',
         align: 'center'
     }).setOrigin(0.5, 0);
     
-    this.add.text(w * 0.25, taskY + 82, 'ВАЖНАЯ КНИГА БЫЛА СНИЗУ (LIFO)', {
+    this.add.text(w * 0.25, taskY - 10, 'ВАЖНАЯ КНИГА БЫЛА СНИЗУ (LIFO)\n Ширина = Важность', {
         fontSize: '20px',
-        fontFamily: pixelFont,
+        fontFamily: 'pixel',
         color: '#ff8866',
         fontStyle: 'bold',
         align: 'center'
