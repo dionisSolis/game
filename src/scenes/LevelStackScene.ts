@@ -391,16 +391,55 @@ return [
 
     private spawnSourceBooks() {
         const positions = this.sourcePositions();
-        SOURCE_BOOKS.forEach((data, i) => {
-            const { x, y } = positions[i];
-            const book = new Book(this, x, y + 28, data.name, data.significance, data.colorIndex);
-            book.setAlpha(0);
-            this.tweens.add({
-                targets: book, alpha: 1, y,
-                duration: 20, delay: i * 80, ease: 'Quad.easeOut',
-            });
-            this.sourceBooks.set(data.name, book);
+
+        const initialStack = ['Идиот', 'Дикий Веперь'];
+
+        let srcPosIndex = 0;
+
+        SOURCE_BOOKS.forEach((data) => {
+            if (initialStack.includes(data.name)) {
+                const stackIdx = initialStack.indexOf(data.name);
+                const book = new Book(this, 0, 0, data.name, data.significance, data.colorIndex);
+               
+                book.setPosition(this.bookX(book.bookW), this.bookY(stackIdx));
+                this.destStack[stackIdx] = book;
+            } else {
+                const { x, y } = positions[srcPosIndex++] || positions[0];
+                const book = new Book(this, x, y + 28, data.name, data.significance, data.colorIndex);
+                book.setAlpha(0);
+                this.tweens.add({
+                    targets: book, alpha: 1, y,
+                    duration: 20, delay: srcPosIndex * 80, ease: 'Quad.easeOut',
+                });
+                this.sourceBooks.set(data.name, book);
+                this.makeBookInteractive(book, y);
+            }
         });
+    }
+
+    private makeBookInteractive(book: Book, baseY: number) {
+        try {
+            book.setInteractive();
+            book.on('pointerover', () =>
+                this.tweens.add({ targets: book, y: baseY - 12, duration: 150, ease: 'Quad.easeOut' })
+            );
+            book.on('pointerout', () =>
+                this.tweens.add({ targets: book, y: baseY, duration: 150, ease: 'Quad.easeIn' })
+            );
+        } catch (e) {
+            // Some objects may not support interactivity at creation time — ignore safely
+        }
+    }
+
+    async collectAllToStack(): Promise<void> {
+        for (const name of TARGET_ORDER) {
+            const book = this.sourceBooks.get(name);
+            if (!book) continue;
+            this.sourceBooks.delete(name);
+            const idx = this.destStack.length;
+            await book.moveTo(this.bookX(book.bookW), this.bookY(idx), 430);
+            this.destStack.push(book);
+        }
     }
 
 
@@ -428,7 +467,16 @@ return [
             window.showOutput('❌ Стек пуст — нечего убирать (POP)', true);
             return;
         }
-        await this.destStack.pop()!.pop(280);
+        const book = this.destStack.pop()!;
+
+        const positions = this.sourcePositions();
+        const nextIndex = Math.min(this.sourceBooks.size, positions.length - 1);
+        const pos = positions[nextIndex] || positions[0];
+
+        await book.moveTo(pos.x, pos.y, 380);
+        book.setAlpha(1);
+        this.sourceBooks.set(book.bookName, book);
+        this.makeBookInteractive(book, pos.y);
     }
 
     private async runCommands(commands: any[]): Promise<void> {
