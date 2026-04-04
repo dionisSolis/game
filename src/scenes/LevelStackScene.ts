@@ -265,16 +265,6 @@ export class LevelStackScene extends Phaser.Scene {
             'box-shadow:0 2px 12px rgba(0,0,0,0.5)',
         ].join(';');
 
-        const label = document.createElement('div');
-        label.style.cssText = [
-            'color:#ccaaff',
-            'font-family:"Press Start 2P",monospace',
-            'font-size:10px',
-            'padding:0 2px',
-        ].join(';');
-        label.textContent = '🐱 Спроси у Рекурсии';
-        widget.appendChild(label);
-
         const inputRow = document.createElement('div');
         inputRow.style.cssText = 'display:flex;gap:0;';
         widget.appendChild(inputRow);
@@ -334,25 +324,7 @@ export class LevelStackScene extends Phaser.Scene {
         this.chatBtn     = btn;
     }
 
-    private drawDivider(w: number, h: number) {
-        const g = this.add.graphics();
-        g.lineStyle(1, 0x444466, 0.35);
-        g.lineBetween(w * 0.5, 30, w * 0.5, h - 20);
-    }
-
-    private drawTable(w: number, h: number) {
-        const tableY = this.tableY(h);
-        const g = this.add.graphics();
-        g.fillStyle(0x5c3d1e, 1);
-        g.fillRect(10, tableY, w - 20, 14);
-        g.fillStyle(0x000000, 0.25);
-        g.fillRect(10, tableY + 14, w - 20, 5);
-    }
-
 private drawLabels(w: number, h: number) {
-    const pixelFont = '"Press Start 2P", monospace';
-    const monoFont = '"Courier New", monospace';
-
     const taskOffset = 25;
     const taskY = h * 0.10 + taskOffset;
     
@@ -403,23 +375,6 @@ private drawLabels(w: number, h: number) {
     }).setOrigin(0.5, 0);
     
 }
-
-    /** Ghost outlines showing the desired final stack state */
-    private drawTargetHint(w: number, h: number) {
-        const cx = w * 0.88;
-
-        TARGET_ORDER.forEach((name, i) => {
-            const data = SOURCE_BOOKS.find(b => b.name === name)!;
-            const bW   = 108 - (data.significance - 1) * 16;
-            const y = h * 0.78 - i * 22;
-            const g = this.add.graphics();
-            g.lineStyle(1, 0x444488, 0.55);
-            g.strokeRect(cx - bW / 2, y - 8, bW, 16);
-            this.add.text(cx, y, name.replace('\n', ' '), {
-                fontSize: '8px', color: '#555577',
-            }).setOrigin(0.5);
-        });
-    }
 
     private sourcePositions() {
         const w = this.scale.width;
