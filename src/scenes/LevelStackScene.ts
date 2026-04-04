@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { Book, BOOK_H } from '../objects/Book';
 import { SaveManager } from '../utils/SaveManager';
 import { CodeEditor } from '../ui/CodeEditor';
-import { getStackLevelFeedback } from '../feedback/recurs';
+import { aiAgent } from '../ai/AiAgent';
 
 
 const SOURCE_BOOKS = [
@@ -14,7 +14,9 @@ const SOURCE_BOOKS = [
 
 const TARGET_ORDER = ['Дикий Веперь', 'Идиот', '1984', 'Стихи'];
 
-const STACK_GAP = 3;
+const STACK_GAP    = 3;
+const BUBBLE_TOP_Y = 130;
+const BUBBLE_H     = 220;
 
 
 export class LevelStackScene extends Phaser.Scene {
@@ -23,9 +25,16 @@ export class LevelStackScene extends Phaser.Scene {
     private editor:      CodeEditor | null = null;
     private executing    = false;
 
-    private bubbleBg:   Phaser.GameObjects.Graphics | null = null;
-    private bubbleText: Phaser.GameObjects.Text    | null = null;
-    private bubbleLastH = 0;
+    private bubbleBg:      Phaser.GameObjects.Graphics | null = null;
+    private bubbleNameBg:  Phaser.GameObjects.Graphics | null = null;
+    private bubbleNameText:Phaser.GameObjects.Text     | null = null;
+    private bubbleTextDiv: HTMLDivElement               | null = null;
+    private chatWidget:    HTMLElement                  | null = null;
+    private chatInput:     HTMLInputElement             | null = null;
+    private chatBtn:       HTMLButtonElement            | null = null;
+    private hubButton:     HTMLElement                  | null = null;
+    private levelComplete  = false;
+    private victoryAiText  = '';
 
     constructor() { super({ key: 'LevelStackScene' }); }
 
@@ -42,154 +51,292 @@ export class LevelStackScene extends Phaser.Scene {
             this.add.image(w / 2, h / 2, 'bg-level').setDisplaySize(w, h);
         } catch { }
 
-        this.drawTable(w, h);
         this.drawLabels(w, h);
-        this.drawTargetHint(w, h);
         this.spawnSourceBooks();
         this.createBackButton();
 
+        this.injectStyles();
         this.createSpeechBubble(w, h);
+        this.createChatWidget();
+        this.greetAsync();
 
         this.editor = new CodeEditor('game-container');
         window.showExecuteButton(true);
         this.editor.onExecute(r => this.handleExecutionResult(r));
+        this.editor.onChange(() => {
+            if (this.levelComplete) {
+                window.setExecuteButtonState(false, '▶ Код изменён — запустить снова?');
+            }
+        });
 
         const savedCode = SaveManager.loadCode('stack');
         if (savedCode) this.editor.setCode(savedCode);
     }
 
 
-    private createSpeechBubble(w: number, h: number): void {
-        const bW  = w * 0.42;
-        const cx  = w * 0.72;
-        const pad = 30;
-
+    private createSpeechBubble(w: number, _h: number): void {
         this.bubbleBg = this.add.graphics().setDepth(8).setAlpha(0);
 
-        this.bubbleText = this.add.text(
-            cx - bW / 2 + pad,
-            68 + pad,
-            '',
-            {
-                fontSize: '20px',
-                fontFamily: '"Press Start 2P", monospace',
-                color: '#e0e0ff',
-                wordWrap: { width: bW - pad * 2 },
-                lineSpacing: 6,
-            },
-        ).setOrigin(0, 0).setDepth(9).setAlpha(0);
+        this.bubbleNameBg = this.add.graphics().setDepth(9).setAlpha(0);
+        this.bubbleNameBg.fillStyle(0x1a1a3a, 0.95);
+        this.bubbleNameBg.fillRoundedRect(w * 0.76 - 72, BUBBLE_TOP_Y - 28, 144, 24, 5);
+        this.bubbleNameBg.lineStyle(1, 0x6655aa, 0.8);
+        this.bubbleNameBg.strokeRoundedRect(w * 0.76 - 72, BUBBLE_TOP_Y - 28, 144, 24, 5);
+        this.bubbleNameText = this.add.text(w * 0.76, BUBBLE_TOP_Y - 16, '🐱 Рекурсия', {
+            fontSize: '20px',
+            fontFamily: 'pixel',
+            color: '#ccaaff',
+        }).setOrigin(0.5, 0.5).setDepth(10).setAlpha(0);
+
+        const div = document.createElement('div');
+        div.style.cssText = [
+            'position:fixed',
+            'overflow-y:auto',
+            'color:#e0e0ff',
+            'font-family:"Press Start 2P",monospace',
+            'font-size:13px',
+            'line-height:1.6',
+            'z-index:20',
+            'display:none',
+            'scrollbar-width:thin',
+            'scrollbar-color:#334455 transparent',
+        ].join(';');
+        document.body.appendChild(div);
+        this.bubbleTextDiv = div;
+    }
+
+    private formatText(text: string): string {
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     }
 
     private showSpeechBubble(message: string, isError: boolean): void {
-        if (!this.bubbleBg || !this.bubbleText) return;
+        if (!this.bubbleBg || !this.bubbleTextDiv) return;
+        this.drawBubble(isError);
+        this.positionDiv();
 
+        this.bubbleTextDiv.innerHTML = '';
+        if (this.levelComplete && this.victoryAiText) {
+            const header = document.createElement('div');
+            header.style.cssText = 'color:#44ff88;font-weight:bold;font-size:14px;margin-bottom:8px;';
+            header.textContent = '✓ Уровень пройден!';
+            this.bubbleTextDiv.appendChild(header);
+
+            if (message === this.victoryAiText) {
+                const msg = document.createElement('div');
+                msg.innerHTML = this.formatText(message);
+                this.bubbleTextDiv.appendChild(msg);
+                this.bubbleTextDiv.scrollTop = 0;
+            } else {
+                const bannerMsg = document.createElement('div');
+                bannerMsg.style.marginBottom = '8px';
+                bannerMsg.innerHTML = this.formatText(this.victoryAiText);
+                this.bubbleTextDiv.appendChild(bannerMsg);
+
+                const label = document.createElement('div');
+                label.style.cssText = 'color:#aaaacc;font-size:10px;margin:6px 0 4px;';
+                label.textContent = '~ Рекурсия отвечает ~';
+                this.bubbleTextDiv.appendChild(label);
+
+                const chatMsg = document.createElement('div');
+                chatMsg.innerHTML = this.formatText(message);
+                this.bubbleTextDiv.appendChild(chatMsg);
+
+                this.bubbleTextDiv.scrollTop = this.bubbleTextDiv.scrollHeight;
+            }
+        } else {
+            this.bubbleTextDiv.innerHTML = this.formatText(message);
+            this.bubbleTextDiv.scrollTop = 0;
+        }
+
+        this.bubbleTextDiv.style.display = 'block';
+    }
+
+    private hideSpeechBubble(): void {
+        if (this.bubbleBg)       this.bubbleBg.setAlpha(0);
+        if (this.bubbleNameBg)   this.bubbleNameBg.setAlpha(0);
+        if (this.bubbleNameText) this.bubbleNameText.setAlpha(0);
+        if (this.bubbleTextDiv)  this.bubbleTextDiv.style.display = 'none';
+    }
+
+    private injectStyles(): void {
+        if (document.getElementById('recursion-bubble-styles')) return;
+        const style = document.createElement('style');
+        style.id = 'recursion-bubble-styles';
+        style.textContent = `
+            @keyframes thinking-bounce {
+                0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+                40%           { opacity: 1;    transform: translateY(-5px); }
+            }
+            .thinking-dot {
+                display: inline-block;
+                width: 9px; height: 9px;
+                border-radius: 50%;
+                background: #ccaaff;
+                margin: 0 4px;
+                animation: thinking-bounce 1.3s infinite ease-in-out;
+            }
+            .thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+            .thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+        `;
+        document.head.appendChild(style);
+    }
+
+    private drawBubble(isError: boolean): void {
+        if (!this.bubbleBg) return;
+        const w  = this.scale.width;
+        const bW = w * 0.42;
+        const cx = w * 0.76;
+        const r  = 10;
+        const borderColor = isError ? 0xaa3333 : 0x33aa77;
+        this.bubbleBg.clear();
+        this.bubbleBg.fillStyle(0x0d0d20, 0.94);
+        this.bubbleBg.fillRoundedRect(cx - bW / 2, BUBBLE_TOP_Y, bW, BUBBLE_H, r);
+        this.bubbleBg.lineStyle(1.5, borderColor, 0.9);
+        this.bubbleBg.strokeRoundedRect(cx - bW / 2, BUBBLE_TOP_Y, bW, BUBBLE_H, r);
+        const tailX = cx - bW / 2 + 280;
+        const tailY = BUBBLE_TOP_Y + BUBBLE_H;
+        this.bubbleBg.fillStyle(0x0d0d20, 0.94);
+        this.bubbleBg.fillTriangle(tailX, tailY - 1, tailX + 49, tailY - 1, tailX, tailY + 45);
+        this.tweens.add({
+            targets: [this.bubbleBg, this.bubbleNameBg, this.bubbleNameText],
+            alpha: 1, duration: 350, ease: 'Quad.easeOut',
+        });
+    }
+
+    private positionDiv(): void {
+        if (!this.bubbleTextDiv) return;
         const w   = this.scale.width;
         const bW  = w * 0.42;
         const cx  = w * 0.76;
         const pad = 12;
-        const r   = 10;
-        const topY = 300;
-
-        this.bubbleText.setText(message);
-        const bH    = Math.max(140, this.bubbleText.height + pad * 2);
-        this.bubbleLastH = bH;
-        const tailX = cx - bW / 2 + 280;
-        const tailY = topY + bH;
-
-        const borderColor = isError ? 0xaa3333 : 0x33aa77;
-
-        this.bubbleBg.clear();
-        this.bubbleBg.fillStyle(0x0d0d20, 0.94);
-        this.bubbleBg.fillRoundedRect(cx - bW / 2, topY, bW, bH, r);
-        this.bubbleBg.lineStyle(1.5, borderColor, 0.9);
-        this.bubbleBg.strokeRoundedRect(cx - bW / 2, topY, bW, bH, r);
-        this.bubbleBg.fillStyle(0x0d0d20, 0.94);
-        this.bubbleBg.fillTriangle(tailX, tailY - 1, tailX + 49, tailY - 1, tailX, tailY + 45);
-
-        this.bubbleText.setPosition(cx - bW / 2 + pad, topY + pad);
-
-        this.tweens.add({
-            targets: [this.bubbleBg, this.bubbleText],
-            alpha: 1,
-            duration: 350,
-            ease: 'Quad.easeOut',
-        });
+        const rect = this.scale.canvas.getBoundingClientRect();
+        const sx = rect.width  / this.scale.width;
+        const sy = rect.height / this.scale.height;
+        this.bubbleTextDiv.style.left   = (rect.left + (cx - bW / 2 + pad) * sx) + 'px';
+        this.bubbleTextDiv.style.top    = (rect.top  + (BUBBLE_TOP_Y + pad) * sy) + 'px';
+        this.bubbleTextDiv.style.width  = (bW - pad * 2) * sx + 'px';
+        this.bubbleTextDiv.style.height = (BUBBLE_H - pad * 2) * sy + 'px';
     }
 
-    private hideSpeechBubble(): void {
-        if (this.bubbleBg)   this.bubbleBg.setAlpha(0);
-        if (this.bubbleText) this.bubbleText.setAlpha(0);
+    private showThinking(): void {
+        if (!this.bubbleTextDiv) return;
+        this.drawBubble(false);
+        this.positionDiv();
+        this.bubbleTextDiv.innerHTML = `
+            <div style="color:#aaaacc;font-size:11px;margin-bottom:14px;letter-spacing:1px;">
+                Кошечка Рекурсия просыпается (подожди ~минутку)...
+            </div>
+            <div>
+                <span class="thinking-dot"></span>
+                <span class="thinking-dot"></span>
+                <span class="thinking-dot"></span>
+            </div>`;
+        this.bubbleTextDiv.style.display = 'block';
     }
 
-    private drawDivider(w: number, h: number) {
-        const g = this.add.graphics();
-        g.lineStyle(1, 0x444466, 0.35);
-        g.lineBetween(w * 0.5, 30, w * 0.5, h - 20);
+    private setChatLocked(locked: boolean): void {
+        if (this.chatInput) this.chatInput.disabled = locked;
+        if (this.chatBtn)   this.chatBtn.disabled   = locked;
+        if (this.chatBtn)   this.chatBtn.style.opacity = locked ? '0.5' : '1';
     }
 
-    private drawTable(w: number, h: number) {
-        const tableY = this.tableY(h);
-        const g = this.add.graphics();
-        g.fillStyle(0x5c3d1e, 1);
-        g.fillRect(10, tableY, w - 20, 14);
-        g.fillStyle(0x000000, 0.25);
-        g.fillRect(10, tableY + 14, w - 20, 5);
+    private async greetAsync(): Promise<void> {
+        this.showThinking();
+        const response = await aiAgent.greetPlayer();
+        this.showSpeechBubble(response.text, false);
+    }
+
+    private createChatWidget(): void {
+        const widget = document.createElement('div');
+        widget.id = 'cat-chat-widget';
+        widget.style.cssText = [
+            'position:fixed',
+            'bottom:56px',
+            'left:calc(65vw * 0.53)',
+            'width:calc(65vw * 0.44)',
+            'z-index:200',
+            'display:flex',
+            'flex-direction:column',
+            'gap:4px',
+            'box-shadow:0 2px 12px rgba(0,0,0,0.5)',
+        ].join(';');
+
+        const inputRow = document.createElement('div');
+        inputRow.style.cssText = 'display:flex;gap:0;';
+        widget.appendChild(inputRow);
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = 'Спроси у кошечки Рекурсии...';
+        input.style.cssText = [
+            'flex:2',
+            'background:#0d0d20',
+            'color:#e0e0ff',
+            'border:1px solid #334455',
+            'font-family:monospace',
+            'font-size:14px',
+            'padding:10px 14px',
+            'outline:none',
+            'border-radius:8px 0 0 8px',
+            'min-width:0',
+        ].join(';');
+
+        const btn = document.createElement('button');
+        btn.textContent = '→';
+        btn.style.cssText = [
+            'background:#2244aa',
+            'color:#ffffff',
+            'border:1px solid #334455',
+            'border-left:none',
+            'font-family:monospace',
+            'font-size:18px',
+            'padding:10px 18px',
+            'cursor:pointer',
+            'border-radius:0 8px 8px 0',
+            'flex-shrink:0',
+        ].join(';');
+        btn.addEventListener('mouseenter', () => { btn.style.background = '#3366cc'; });
+        btn.addEventListener('mouseleave', () => { btn.style.background = '#2244aa'; });
+
+        const send = async () => {
+            const q = input.value.trim();
+            if (!q) return;
+            input.value = '';
+            this.setChatLocked(true);
+            this.showThinking();
+            const response = await aiAgent.ask(q);
+            this.showSpeechBubble(response.text, false);
+            this.setChatLocked(false);
+        };
+
+        btn.addEventListener('click', send);
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+
+        inputRow.appendChild(input);
+        inputRow.appendChild(btn);
+        document.body.appendChild(widget);
+        this.chatWidget  = widget;
+        this.chatInput   = input;
+        this.chatBtn     = btn;
     }
 
 private drawLabels(w: number, h: number) {
-    const pixelFont = '"Press Start 2P", monospace';
-    const monoFont = '"Courier New", monospace';
-    
-    const sourceBg = this.add.graphics();
-    sourceBg.fillStyle(0x2a1a0a, 0.9);
-    sourceBg.fillRoundedRect(w * 0.25 - 120, 12, 240, 48, 4);
-    sourceBg.lineStyle(2, 0xc4a27a, 0.8);
-    sourceBg.strokeRoundedRect(w * 0.25 - 120, 12, 240, 48, 4);
-    
-    this.add.text(w * 0.25, 36, 'ИСТОЧНИК', {
-        fontSize: '22px',
-        fontFamily: pixelFont,
-        color: '#ffcc88',
-        fontStyle: 'bold'
-    }).setOrigin(0.5);
-
-    const stackBg = this.add.graphics();
-    stackBg.fillStyle(0x2a1a0a, 0.9);
-    stackBg.fillRoundedRect(w * 0.66 - 140, 12, 280, 48, 4);
-    stackBg.lineStyle(2, 0xc4a27a, 0.8);
-    stackBg.strokeRoundedRect(w * 0.66 - 140, 12, 280, 48, 4);
-    
-    this.add.text(w * 0.66, 36, 'СТЕК (LIFO)', {
-        fontSize: '22px',
-        fontFamily: pixelFont,
-        color: '#ffcc88',
-        fontStyle: 'bold'
-    }).setOrigin(0.5);
-
-    const hintBg = this.add.graphics();
-    hintBg.fillStyle(0x1a1a0a, 0.7);
-    hintBg.fillRoundedRect(w * 0.25 - 160, 70, 320, 32, 3);
-    hintBg.lineStyle(1, 0x8a8a66, 0.5);
-    hintBg.strokeRoundedRect(w * 0.25 - 160, 70, 320, 32, 3);
-    
-    this.add.text(w * 0.25, 86, 'Ширина книги = важность', {
-        fontSize: '14px',
-        fontFamily: monoFont,
-        color: '#a8a888',
-    }).setOrigin(0.5);
-
     const taskOffset = 25;
     const taskY = h * 0.10 + taskOffset;
     
     const taskBg = this.add.graphics();
     taskBg.fillStyle(0x0d0a1a, 0.95);
-    taskBg.fillRoundedRect(w * 0.25 - 200, taskY - 10, 400, 130, 8);
+    taskBg.fillRoundedRect(w * 0.25 - 200, taskY - 70, 400, 130, 8);
     taskBg.lineStyle(3, 0xffaa66, 0.6);
-    taskBg.strokeRoundedRect(w * 0.25 - 200, taskY - 10, 400, 130, 8);
+    taskBg.strokeRoundedRect(w * 0.25 - 200, taskY - 70, 400, 130, 8);
     
     const cornerSize = 12;
     const rectX = w * 0.25 - 200;
-    const rectY = taskY - 10;
+    const rectY = taskY - 70;
     const rectW = 400;
     const rectH = 130;
     
@@ -204,60 +351,30 @@ private drawLabels(w: number, h: number) {
     corners.lineBetween(rectX + rectW - cornerSize, rectY + rectH, rectX + rectW, rectY + rectH);
     corners.lineBetween(rectX + rectW, rectY + rectH - cornerSize, rectX + rectW, rectY + rectH);
     
-    this.add.text(w * 0.25, taskY + 15, '▸ ЗАДАНИЕ ◂', {
-        fontSize: '18px',
-        fontFamily: pixelFont,
+    this.add.text(w * 0.25, taskY - 60, '▸ ЗАДАНИЕ ◂', {
+        fontSize: '22px',
+        fontFamily: 'pixel',
         color: '#ffaa66',
         fontStyle: 'bold',
         align: 'center'
     }).setOrigin(0.5, 0);
     
-    this.add.text(w * 0.25, taskY + 50, 'Собери стек так, чтобы', {
+    this.add.text(w * 0.25, taskY - 35, 'Собери стек так, чтобы', {
         fontSize: '18px',
-        fontFamily: monoFont,
+        fontFamily: 'pixel',
         color: '#dddddd',
         align: 'center'
     }).setOrigin(0.5, 0);
     
-    this.add.text(w * 0.25, taskY + 82, 'ВАЖНАЯ КНИГА БЫЛА СНИЗУ', {
+    this.add.text(w * 0.25, taskY - 10, 'ВАЖНАЯ КНИГА БЫЛА СНИЗУ (LIFO)\n Ширина = Важность', {
         fontSize: '20px',
-        fontFamily: pixelFont,
+        fontFamily: 'pixel',
         color: '#ff8866',
         fontStyle: 'bold',
         align: 'center'
     }).setOrigin(0.5, 0);
     
-    this.add.graphics().fillStyle(0xffaa66, 0.7);
-    const arrow = this.add.graphics();
-    arrow.fillStyle(0xffaa66, 0.7);
-    arrow.fillTriangle(w * 0.48, taskY + 50, w * 0.52, taskY + 10, w * 0.52, taskY + 190);
-    
-    this.tweens.add({
-        targets: arrow,
-        alpha: { from: 0.3, to: 0.9 },
-        duration: 800,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut'
-    });
 }
-
-    /** Ghost outlines showing the desired final stack state */
-    private drawTargetHint(w: number, h: number) {
-        const cx = w * 0.88;
-
-        TARGET_ORDER.forEach((name, i) => {
-            const data = SOURCE_BOOKS.find(b => b.name === name)!;
-            const bW   = 108 - (data.significance - 1) * 16;
-            const y = h * 0.78 - i * 22;
-            const g = this.add.graphics();
-            g.lineStyle(1, 0x444488, 0.55);
-            g.strokeRect(cx - bW / 2, y - 8, bW, 16);
-            this.add.text(cx, y, name.replace('\n', ' '), {
-                fontSize: '8px', color: '#555577',
-            }).setOrigin(0.5);
-        });
-    }
 
     private sourcePositions() {
         const w = this.scale.width;
@@ -329,45 +446,46 @@ return [
         );
     }
 
-    private showVictory() {
+    private showVictory(aiText: string) {
         SaveManager.markLevelComplete('stack');
 
-        const w    = this.scale.width;
-        const bW   = w * 0.42;
-        const cx   = w * 0.76;
-        const topY = 300;
-        const pad  = 12;
+        this.levelComplete = true;
+        this.victoryAiText = aiText;
+        window.setExecuteButtonState(true, '✓ Задание выполнено — молодец!');
 
-        const bubbleLeft  = cx - bW / 2;
-        const bubbleRight = cx + bW / 2;
-        const bubbleBot   = topY + this.bubbleLastH;
+        const canvas = this.scale.canvas;
+        const rect   = canvas.getBoundingClientRect();
+        const sx     = rect.width  / this.scale.width;
+        const sy     = rect.height / this.scale.height;
+        const w      = this.scale.width;
+        const bW     = w * 0.42;
+        const cx     = w * 0.76;
 
-        if (this.bubbleText) {
-            this.bubbleText.setY(topY + 44);
-        }
-
-        this.add.text(bubbleLeft + pad, topY + pad, '✓ Стек собран!', {
-            fontSize: '24px',
-            fontFamily: '"Courier New", monospace',
-            color: '#44ff88',
-            fontStyle: 'bold',
-        }).setOrigin(0, 0).setDepth(12);
-
-        this.add.text(bubbleRight - pad, bubbleBot - pad, '  ← Хаб  ', {
-            fontSize: '16px',
-            fontFamily: '"Courier New", monospace',
-            color: '#ffffff',
-            backgroundColor: '#2244aa',
-            padding: { x: 6, y: 4 },
-        }).setOrigin(1, 1).setDepth(12)
-            .setInteractive({ useHandCursor: true })
-            .on('pointerover',  function(this: Phaser.GameObjects.Text) { this.setStyle({ backgroundColor: '#3366cc' }); })
-            .on('pointerout',   function(this: Phaser.GameObjects.Text) { this.setStyle({ backgroundColor: '#2244aa' }); })
-            .on('pointerdown', () => {
-                this.cleanup();
-                this.cameras.main.fadeOut(300, 0, 0, 0);
-                this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('HubScene'));
-            });
+        const btn = document.createElement('button');
+        btn.textContent = '← Вернуться в хаб';
+        btn.style.cssText = [
+            'position:fixed',
+            `left:${rect.left + (cx + bW / 2 - 190) * sx}px`,
+            `top:${rect.top + (BUBBLE_TOP_Y + BUBBLE_H + 10) * sy}px`,
+            'background:#2244aa',
+            'color:#ffffff',
+            'border:none',
+            'font-family:monospace',
+            'font-size:14px',
+            'padding:7px 16px',
+            'cursor:pointer',
+            'border-radius:4px',
+            'z-index:201',
+        ].join(';');
+        btn.addEventListener('mouseenter', () => { btn.style.background = '#3366cc'; });
+        btn.addEventListener('mouseleave', () => { btn.style.background = '#2244aa'; });
+        btn.addEventListener('click', () => {
+            this.cleanup();
+            this.cameras.main.fadeOut(300, 0, 0, 0);
+            this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('HubScene'));
+        });
+        document.body.appendChild(btn);
+        this.hubButton = btn;
     }
 
 
@@ -382,9 +500,12 @@ return [
     private async handleExecutionResult(result: any): Promise<void> {
         if (this.executing) return;
 
+        const code = this.editor?.getCode() ?? '';
+
         if (!result.success) {
-            const fb = getStackLevelFeedback(false, result.error);
-            this.showSpeechBubble(fb.message, true);
+            this.showThinking();
+            const fb = await aiAgent.getHint(code, result.error, false);
+            this.showSpeechBubble(fb.text, true);
             return;
         }
 
@@ -392,8 +513,9 @@ return [
             (c: any) => c.type === 'PUSH' || c.type === 'POP',
         );
         if (cmds.length === 0) {
-            const fb = getStackLevelFeedback(false, 'Нет команд PUSH/POP в выводе программы');
-            this.showSpeechBubble(fb.message, true);
+            this.showThinking();
+            const fb = await aiAgent.getHint(code, 'Нет команд PUSH/POP в выводе программы', false);
+            this.showSpeechBubble(fb.text, true);
             return;
         }
 
@@ -407,11 +529,14 @@ return [
 
         await this.runCommands(cmds);
 
-        if (this.checkVictory()) {
-            const fb = getStackLevelFeedback(true);
-            this.showSpeechBubble(fb.message, false);
-            this.showVictory();
-        }
+        this.showThinking();
+        const success = this.checkVictory();
+        const cmdNames = cmds.map((c: any) =>
+            c.type === 'PUSH' ? `PUSH(${c.bookName})` : 'POP'
+        );
+        const fb = await aiAgent.getCodeFeedback(code, cmdNames, TARGET_ORDER, success);
+        if (success) this.showVictory(fb.text);
+        this.showSpeechBubble(fb.text, !success);
 
         this.executing = false;
     }
@@ -438,6 +563,18 @@ return [
             SaveManager.saveCode('stack', this.editor.getCode());
             this.editor.cleanup();
             this.editor = null;
+        }
+        if (this.bubbleTextDiv) {
+            this.bubbleTextDiv.remove();
+            this.bubbleTextDiv = null;
+        }
+        if (this.hubButton) {
+            this.hubButton.remove();
+            this.hubButton = null;
+        }
+        if (this.chatWidget) {
+            this.chatWidget.remove();
+            this.chatWidget = null;
         }
         window.showExecuteButton(false);
     }
