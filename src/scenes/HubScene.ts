@@ -7,8 +7,6 @@ const DOOR_X = GAME_WIDTH * 0.09;
 const DOOR_Y = GAME_HEIGHT * 0.4;
 
 export class HubScene extends Phaser.Scene {
-    private dialogBubble: Phaser.GameObjects.Container | null = null;
-    private dialogText: Phaser.GameObjects.Text | null = null;
     private ghost: Phaser.GameObjects.Image | null = null;
     private isLevelComplete: boolean = false;
 
@@ -109,8 +107,6 @@ export class HubScene extends Phaser.Scene {
             ease: 'Sine.easeInOut'
         });
         
-        this.dialogBubble = container;
-        this.dialogText = text;
     }
 
     private drawBackground() {
