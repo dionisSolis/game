@@ -7,7 +7,6 @@ import { ViewUpdate } from '@codemirror/view';
 
 export class CodeEditor {
     private view: EditorView;
-    private container: HTMLElement;
     private onExecuteCallback: ((result: any) => void) | null = null;
     private onChangeCallback:  (() => void)             | null = null;
 
@@ -21,8 +20,6 @@ export class CodeEditor {
         } else {
             document.body.appendChild(editorContainer);
         }
-        
-        this.container = editorContainer;
         
         const editorElement = document.createElement('div');
         editorElement.className = 'cm-wrapper';
