@@ -106,7 +106,6 @@ export class HubScene extends Phaser.Scene {
             repeat: -1,
             ease: 'Sine.easeInOut'
         });
-        
     }
 
     private drawBackground() {

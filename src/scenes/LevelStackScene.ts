@@ -613,7 +613,7 @@ export class LevelStackScene extends Phaser.Scene {
         const cmdNames = cmds.map((c: any) =>
             c.type === 'PUSH' ? `PUSH(${c.bookName})` : 'POP'
         );
-        const fb = await aiAgent.getCodeFeedback(code, cmdNames, TARGET_ORDER, success);
+        const fb = await aiAgent.getCodeFeedback(code, cmdNames, TARGET_ORDER, this.destStack.map(book => book.bookName), success);
         if (success) this.showVictory(fb.text);
         this.showSpeechBubble(fb.text, !success);
 
