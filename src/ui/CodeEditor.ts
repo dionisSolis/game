@@ -106,7 +106,9 @@ export class CodeEditor {
     private getDefaultCode(): string {
         return `#include <iostream>
 using namespace std;
-
+//Синтаксис: 
+//    cout << "PUSH: название книги" << endl;
+//    cout << "POP" << endl;
 int main() {
     cout << "Hello, World!" << endl;
     return 0;
