@@ -3,11 +3,13 @@ import { EditorState } from '@codemirror/state';
 import { cpp } from '@codemirror/lang-cpp';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { executeCode } from '../code-execution/ExecuteCode';
+import { ViewUpdate } from '@codemirror/view';
 
 export class CodeEditor {
     private view: EditorView;
     private container: HTMLElement;
     private onExecuteCallback: ((result: any) => void) | null = null;
+    private onChangeCallback:  (() => void)             | null = null;
 
     constructor(containerId: string) {
         const editorContainer = document.createElement('div');
@@ -34,6 +36,11 @@ export class CodeEditor {
                     cpp(),
                     oneDark,
                     EditorView.lineWrapping,
+                    EditorView.updateListener.of((update: ViewUpdate) => {
+                        if (update.docChanged && this.onChangeCallback) {
+                            this.onChangeCallback();
+                        }
+                    }),
                 ]
             }),
             parent: editorElement
@@ -59,6 +66,10 @@ export class CodeEditor {
     onExecute(callback: (result: any) => void): void {
         this.onExecuteCallback = callback;
     }
+
+    onChange(callback: () => void): void {
+        this.onChangeCallback = callback;
+    }
     
     private async execute(): Promise<void> {
         const code = this.getCode();
@@ -82,7 +93,7 @@ export class CodeEditor {
                 this.onExecuteCallback({ success: false, error: String(error) });
             }
         } finally {
-            window.setExecuteButtonState(false);
+            window.setExecuteButtonState(false, '▶ Выполнить код');
         }
     }
     
