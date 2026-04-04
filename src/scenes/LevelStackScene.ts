@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { Book, BOOK_H } from '../objects/Book';
+import { Book, DEFAULT_BOOK_H } from '../objects/Book';
 import { SaveManager } from '../utils/SaveManager';
 import { CodeEditor } from '../ui/CodeEditor';
 import { aiAgent } from '../ai/AiAgent';
@@ -12,9 +12,16 @@ const SOURCE_BOOKS = [
     { name: 'Идиот',       significance: 2, colorIndex: 1 },
 ];
 
+const BOOK_CUSTOM_SIZES: Record<string, { width: number; height: number }> = {
+    '1984': { width: 180, height: 70 },
+    'Дикий Веперь': { width: 350, height: 120 },
+    'Стихи': { width: 100, height: 50 },
+    'Идиот': { width: 250, height: 100 },
+};
+
 const TARGET_ORDER = ['Дикий Веперь', 'Идиот', '1984', 'Стихи'];
 
-const STACK_GAP    = 3;
+const STACK_GAP    = -30;  
 const BUBBLE_TOP_Y = 130;
 const BUBBLE_H     = 220;
 
@@ -324,88 +331,94 @@ export class LevelStackScene extends Phaser.Scene {
         this.chatBtn     = btn;
     }
 
-private drawLabels(w: number, h: number) {
-    const taskOffset = 25;
-    const taskY = h * 0.10 + taskOffset;
-    
-    const taskBg = this.add.graphics();
-    taskBg.fillStyle(0x0d0a1a, 0.95);
-    taskBg.fillRoundedRect(w * 0.25 - 200, taskY - 70, 400, 130, 8);
-    taskBg.lineStyle(3, 0xffaa66, 0.6);
-    taskBg.strokeRoundedRect(w * 0.25 - 200, taskY - 70, 400, 130, 8);
-    
-    const cornerSize = 12;
-    const rectX = w * 0.25 - 200;
-    const rectY = taskY - 70;
-    const rectW = 400;
-    const rectH = 130;
-    
-    const corners = this.add.graphics();
-    corners.lineStyle(2, 0xffaa66, 0.8);
-    corners.lineBetween(rectX, rectY + cornerSize, rectX, rectY);
-    corners.lineBetween(rectX, rectY, rectX + cornerSize, rectY);
-    corners.lineBetween(rectX + rectW - cornerSize, rectY, rectX + rectW, rectY);
-    corners.lineBetween(rectX + rectW, rectY, rectX + rectW, rectY + cornerSize);
-    corners.lineBetween(rectX, rectY + rectH - cornerSize, rectX, rectY + rectH);
-    corners.lineBetween(rectX, rectY + rectH, rectX + cornerSize, rectY + rectH);
-    corners.lineBetween(rectX + rectW - cornerSize, rectY + rectH, rectX + rectW, rectY + rectH);
-    corners.lineBetween(rectX + rectW, rectY + rectH - cornerSize, rectX + rectW, rectY + rectH);
-    
-    this.add.text(w * 0.25, taskY - 60, '▸ ЗАДАНИЕ ◂', {
-        fontSize: '22px',
-        fontFamily: 'pixel',
-        color: '#ffaa66',
-        fontStyle: 'bold',
-        align: 'center'
-    }).setOrigin(0.5, 0);
-    
-    this.add.text(w * 0.25, taskY - 35, 'Собери стек так, чтобы', {
-        fontSize: '18px',
-        fontFamily: 'pixel',
-        color: '#dddddd',
-        align: 'center'
-    }).setOrigin(0.5, 0);
-    
-    this.add.text(w * 0.25, taskY - 10, 'ВАЖНАЯ КНИГА БЫЛА СНИЗУ (LIFO)\n Ширина = Важность', {
-        fontSize: '20px',
-        fontFamily: 'pixel',
-        color: '#ff8866',
-        fontStyle: 'bold',
-        align: 'center'
-    }).setOrigin(0.5, 0);
-    
-}
+    private drawLabels(w: number, h: number) {
+        const taskOffset = 25;
+        const taskY = h * 0.10 + taskOffset;
+        
+        const taskBg = this.add.graphics();
+        taskBg.fillStyle(0x0d0a1a, 0.95);
+        taskBg.fillRoundedRect(w * 0.25 - 200, taskY - 70, 400, 130, 8);
+        taskBg.lineStyle(3, 0xffaa66, 0.6);
+        taskBg.strokeRoundedRect(w * 0.25 - 200, taskY - 70, 400, 130, 8);
+        
+        const cornerSize = 12;
+        const rectX = w * 0.25 - 200;
+        const rectY = taskY - 70;
+        const rectW = 400;
+        const rectH = 130;
+        
+        const corners = this.add.graphics();
+        corners.lineStyle(2, 0xffaa66, 0.8);
+        corners.lineBetween(rectX, rectY + cornerSize, rectX, rectY);
+        corners.lineBetween(rectX, rectY, rectX + cornerSize, rectY);
+        corners.lineBetween(rectX + rectW - cornerSize, rectY, rectX + rectW, rectY);
+        corners.lineBetween(rectX + rectW, rectY, rectX + rectW, rectY + cornerSize);
+        corners.lineBetween(rectX, rectY + rectH - cornerSize, rectX, rectY + rectH);
+        corners.lineBetween(rectX, rectY + rectH, rectX + cornerSize, rectY + rectH);
+        corners.lineBetween(rectX + rectW - cornerSize, rectY + rectH, rectX + rectW, rectY + rectH);
+        corners.lineBetween(rectX + rectW, rectY + rectH - cornerSize, rectX + rectW, rectY + rectH);
+        
+        this.add.text(w * 0.25, taskY - 60, '▸ ЗАДАНИЕ ◂', {
+            fontSize: '22px',
+            fontFamily: 'pixel',
+            color: '#ffaa66',
+            fontStyle: 'bold',
+            align: 'center'
+        }).setOrigin(0.5, 0);
+        
+        this.add.text(w * 0.25, taskY - 35, 'Собери стек так, чтобы', {
+            fontSize: '18px',
+            fontFamily: 'pixel',
+            color: '#dddddd',
+            align: 'center'
+        }).setOrigin(0.5, 0);
+        
+        this.add.text(w * 0.25, taskY - 10, 'ВАЖНАЯ КНИГА БЫЛА СНИЗУ (LIFO)\n Ширина = Важность', {
+            fontSize: '20px',
+            fontFamily: 'pixel',
+            color: '#ff8866',
+            fontStyle: 'bold',
+            align: 'center'
+        }).setOrigin(0.5, 0);
+        
+    }
 
     private sourcePositions() {
         const w = this.scale.width;
         const h = this.scale.height;
-const left = w * 0.1;
+        const left = w * 0.1;
 
-return [
-    { x: left, y: h * 0.44 },
-    { x: left + w * 0.12, y: h * 0.36 },
-    { x: left, y: h * 0.64 },
-    { x: left + w * 0.12, y: h * 0.60 },
-];
+        return [
+            { x: left, y: h * 0.44 },
+            { x: left + w * 0.12, y: h * 0.36 },
+            { x: left, y: h * 0.64 },
+            { x: left + w * 0.12, y: h * 0.60 },
+        ];
     }
 
     private spawnSourceBooks() {
         const positions = this.sourcePositions();
-
         const initialStack = ['Идиот', 'Дикий Веперь'];
-
         let srcPosIndex = 0;
 
         SOURCE_BOOKS.forEach((data) => {
+            const customSize = BOOK_CUSTOM_SIZES[data.name];
+            
             if (initialStack.includes(data.name)) {
                 const stackIdx = initialStack.indexOf(data.name);
-                const book = new Book(this, 0, 0, data.name, data.significance, data.colorIndex);
+                const book = new Book(
+                    this, 0, 0, data.name, data.significance, data.colorIndex,
+                    customSize?.width, customSize?.height
+                );
                
-                book.setPosition(this.bookX(book.bookW), this.bookY(stackIdx));
+                book.setPosition(this.bookX(book.bookW), this.bookY(stackIdx, book.bookH));
                 this.destStack[stackIdx] = book;
             } else {
                 const { x, y } = positions[srcPosIndex++] || positions[0];
-                const book = new Book(this, x, y + 28, data.name, data.significance, data.colorIndex);
+                const book = new Book(
+                    this, x, y + 28, data.name, data.significance, data.colorIndex,
+                    customSize?.width, customSize?.height
+                );
                 book.setAlpha(0);
                 this.tweens.add({
                     targets: book, alpha: 1, y,
@@ -415,6 +428,19 @@ return [
                 this.makeBookInteractive(book, y);
             }
         });
+        this.updateStackDepths();
+    }
+
+    private updateStackDepths(): void {
+        const baseDepth = 200;
+        for (let i = 0; i < this.destStack.length; i++) {
+            const b = this.destStack[i];
+            if (!b) continue;
+            b.setDepth(baseDepth + i);
+        }
+        for (const b of this.sourceBooks.values()) {
+            try { b.setDepth(baseDepth - 50); } catch (e) { /* ignore */ }
+        }
     }
 
     private makeBookInteractive(book: Book, baseY: number) {
@@ -437,18 +463,38 @@ return [
             if (!book) continue;
             this.sourceBooks.delete(name);
             const idx = this.destStack.length;
-            await book.moveTo(this.bookX(book.bookW), this.bookY(idx), 430);
+            await book.moveToAsync(this.bookX(book.bookW), this.bookY(idx, book.bookH), 430);
             this.destStack.push(book);
+            this.updateStackDepths();
         }
+        this.updateStackDepths();
     }
 
-
-    private tableY(h: number)      { return h * 0.86; }
+    private tableY(h: number)      { return h * 0.93; }
     private stackBaseY()           { return this.tableY(this.scale.height); }
     private stackCenterX()         { return this.scale.width * 0.66 - 250; }
     private bookX(bookW: number)   { return this.stackCenterX() - bookW / 2; }
-    private bookY(index: number)   { return this.stackBaseY() - BOOK_H - index * (BOOK_H + STACK_GAP); }
-
+    
+    private bookY(index: number, bookHeight?: number): number {
+        const height = bookHeight ?? DEFAULT_BOOK_H;
+        let totalOffset = 0;
+        
+        // Суммируем высоты всех предыдущих книг в стеке
+        for (let i = 0; i < index && i < this.destStack.length; i++) {
+            const prevBook = this.destStack[i];
+            const prevHeight = prevBook?.bookH ?? DEFAULT_BOOK_H;
+            totalOffset += prevHeight + STACK_GAP;
+        }
+        
+        // Если индекс выходит за пределы текущего стека, используем накопленную сумму
+        if (index >= this.destStack.length) {
+            for (let i = this.destStack.length; i < index; i++) {
+                totalOffset += DEFAULT_BOOK_H + STACK_GAP;
+            }
+        }
+        
+        return this.stackBaseY() - height - totalOffset;
+    }
 
     private async doPush(bookName: string): Promise<void> {
         const book = this.sourceBooks.get(bookName);
@@ -458,8 +504,10 @@ return [
         }
         this.sourceBooks.delete(bookName);
         const idx = this.destStack.length;
-        await book.moveTo(this.bookX(book.bookW), this.bookY(idx), 430);
+        const yPos = this.bookY(idx, book.bookH);
+        await book.moveToAsync(this.bookX(book.bookW), yPos, 430);
         this.destStack.push(book);
+        this.updateStackDepths();
     }
 
     private async doPop(): Promise<void> {
@@ -473,10 +521,11 @@ return [
         const nextIndex = Math.min(this.sourceBooks.size, positions.length - 1);
         const pos = positions[nextIndex] || positions[0];
 
-        await book.moveTo(pos.x, pos.y, 380);
+        await book.moveToAsync(pos.x, pos.y, 380);
         book.setAlpha(1);
         this.sourceBooks.set(book.bookName, book);
         this.makeBookInteractive(book, pos.y);
+        try { book.setDepth(150); } catch (e) { /* ignore */ }
     }
 
     private async runCommands(commands: any[]): Promise<void> {
@@ -485,7 +534,6 @@ return [
             else if (cmd.type === 'POP')                  await this.doPop();
         }
     }
-
 
     private checkVictory(): boolean {
         return (
@@ -535,7 +583,6 @@ return [
         document.body.appendChild(btn);
         this.hubButton = btn;
     }
-
 
     private resetForNewRun() {
         for (const b of this.sourceBooks.values()) b.destroy();
@@ -588,7 +635,6 @@ return [
 
         this.executing = false;
     }
-
 
     private createBackButton() {
         const btn = this.add.text(14, 14, '← Хаб', {
