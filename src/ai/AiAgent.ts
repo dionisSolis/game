@@ -98,9 +98,10 @@ export class AIAgent {
         playerCode: string,
         commands: string[],
         expectedOrder: string[],
+        actualOrder: string[],
         success: boolean
     ): Promise<AIResponse> {
-        const prompt = getFeedbackPrompt(playerCode, commands, expectedOrder, success);
+        const prompt = getFeedbackPrompt(playerCode, commands, expectedOrder, actualOrder, success);
         const text = await this.sendRequest(prompt);
         return { success: true, text };
     }
