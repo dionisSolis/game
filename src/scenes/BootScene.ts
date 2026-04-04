@@ -14,6 +14,10 @@ const IMAGE_ASSETS = [
     { key: 'father',   path: 'assets/gif/father.gif' },
 ] as const;
 
+const AUDIO_ASSETS = [
+    { key: 'bg-music', path: 'assets/audio/music.mp3' },
+] as const;
+
 const FALLBACK_PARAMS: Record<string, { w: number; h: number; color: number; label?: string }> = {
     'book':     { w: 60,  h: 80,  color: 0x8b4513, label: 'book'  },
     'book1':    { w: 60,  h: 80,  color: 0x8b4513, label: 'book1' },
@@ -43,10 +47,12 @@ export class BootScene extends Phaser.Scene {
         });
 
         IMAGE_ASSETS.forEach(({ key, path }) => this.load.image(key, path));
+        AUDIO_ASSETS.forEach(({ key, path }) => this.load.audio(key, path));
     }
 
     create() {
         this.generateFallbackTextures();
+        this.startBackgroundMusic();
         this.scene.start('HubScene');
     }
 
@@ -77,6 +83,24 @@ export class BootScene extends Phaser.Scene {
         this.progressBar.fillStyle(0x6666cc, 1);
         this.progressBar.fillRoundedRect(cx - 156, cy - 11, 312 * value, 22, 4);
     }
+
+    private startBackgroundMusic() {
+    // Проверяем, нет ли уже играющей музыки в сцене BootScene
+    if (!this.sound.get('bg-music')) {
+        const music = this.sound.add('bg-music', {
+            volume: 0.4,      // Громкость 40%
+            loop: true,       // Зацикливаем
+            delay: 0
+        });
+        music.play();
+    } else {
+        // Если музыка уже есть, просто запускаем её
+        const music = this.sound.get('bg-music');
+        if (!music.isPlaying) {
+            music.play();
+        }
+    }
+}
 
     private generateFallbackTextures() {
         for (const [key, params] of Object.entries(FALLBACK_PARAMS)) {
