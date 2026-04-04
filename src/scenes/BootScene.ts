@@ -11,11 +11,11 @@ const IMAGE_ASSETS = [
     { key: 'door',     path: 'assets/images/door.png' },
     { key: 'bg-hub',   path: 'assets/images/fon_hab.png' },
     { key: 'bg-level', path: 'assets/images/fon_level.png' },
+    { key: 'father',   path: 'assets/gif/father.gif' },
 ] as const;
 
 const FALLBACK_PARAMS: Record<string, { w: number; h: number; color: number; label?: string }> = {
     'book':     { w: 60,  h: 80,  color: 0x8b4513, label: 'book'  },
-    // fallbacks for numbered book textures (book1, book2, ...)
     'book1':    { w: 60,  h: 80,  color: 0x8b4513, label: 'book1' },
     'book2':    { w: 60,  h: 80,  color: 0x2e4a7a, label: 'book2' },
     'book3':    { w: 60,  h: 80,  color: 0x4a7a2e, label: 'book3' },
